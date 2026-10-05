@@ -113,7 +113,7 @@ public sealed class CatalogApiAndModelTests
             .UseSqlServer("Server=localhost;Database=IdentityOffline;Integrated Security=True").Options;
         using var context = new IdentityDbContext(options);
         var migrations = context.Database.GetMigrations().ToArray();
-        Assert.Equal(2, migrations.Length);
+        Assert.Contains(migrations, value => value.EndsWith("_AddCatalogPermission", StringComparison.Ordinal));
         var sql = context.GetService<IMigrator>().GenerateScript(migrations[0], migrations[1]);
         Assert.Contains("catalog.manage", sql);
         Assert.Contains("[identity].[RolePermissions]", sql);

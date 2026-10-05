@@ -18,6 +18,7 @@
     <ProjectReference Include="../src/BuildingBlocks/Infrastructure/MyOnlineShop.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="../src/Modules/Identity/Presentation/MyOnlineShop.Identity.Presentation.csproj" />
     <ProjectReference Include="../src/Modules/Catalog/Presentation/MyOnlineShop.Catalog.Presentation.csproj" />
+    <ProjectReference Include="../src/Modules/Inventory/Presentation/MyOnlineShop.Inventory.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

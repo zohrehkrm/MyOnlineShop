@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 3 — Catalog
+Phase 4 — Inventory
 
 ## Status
 
@@ -59,6 +59,16 @@ Complete under the user-approved database-free validation scope — 2026-10-05
 * InitialCatalog and incremental AddCatalogPermission migrations created and reviewed offline
 * Catalog usage and persistence decisions documented in CATALOG.md
 * Phase 3 affected build and focused database-free tests passed
+* Inventory Domain, Contracts, Application, Infrastructure and Presentation projects
+* Warehouses, unique warehouse/variant stock, active state and low-stock thresholds
+* Auditable receipt, sale, return, damage and manual adjustment movements
+* Atomic conditional SQL stock changes with before/after balances and transactional history
+* Stable operation IDs, request fingerprints, unique operation constraints and retry protection
+* Small Catalog variant-reference contract; Inventory owns quantities independently
+* Inventory DTO APIs, paged queries and existing Identity permission policies
+* InitialInventory and incremental AddInventoryPermissions migrations reviewed offline
+* Inventory unit/API/model tests passed; SQL rollback/concurrency/idempotency tests implemented and skipped
+* Inventory setup, boundaries and validation documented in INVENTORY.md
 
 ## Current Objective
 
@@ -68,7 +78,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 3 is complete; Docker SQL Server integration verification is deferred.
+None. Phase 4 is complete under available validation; Docker SQL Server integration/concurrency verification is deferred.
 
 ## Completed Phases
 
@@ -76,7 +86,7 @@ None. Phase 3 is complete; Docker SQL Server integration verification is deferre
 * [x] Phase 1 — Foundation
 * [x] Phase 2 — Identity
 * [x] Phase 3 — Catalog
-* [ ] Phase 4 — Inventory
+* [x] Phase 4 — Inventory
 * [ ] Phase 5 — Cart
 * [ ] Phase 6 — Pricing & Discount
 * [ ] Phase 7 — Order & Checkout
@@ -93,9 +103,25 @@ None. Phase 3 is complete; Docker SQL Server integration verification is deferre
 
 ## Known Issues
 
+* Inventory runtime SQL locking, affected-row behavior, relational constraints, transaction rollback and concurrent retry behavior remain unverified without SQL Server. Eight implemented SQL integration tests, including the last-unit concurrency test, are skipped pending Docker SQL Server.
+* Inventory quantities are whole SKU units. Fractional bulk measurements are outside the Phase 4 model.
 * Catalog SQL query execution, relational constraints, transaction rollback, rowversion concurrency and hierarchy application locks remain unverified against a live SQL Server. These database-dependent checks were skipped/deferred to Docker SQL Server.
 * SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime. The user explicitly deferred these integration tests to Docker SQL Server; this does not block Phase 2 completion under the revised scope.
 * SQL Server/LocalDB is not available on this machine. No SQL Server or LocalDB installation/use or persistent database modification is authorized for current validation.
+
+## Phase 4 Verification
+
+* Affected API, Inventory, Catalog, Identity and BuildingBlocks projects built successfully with 0 warnings and 0 errors.
+* Inventory tests: 15 passed, 0 failed, 8 database-dependent tests skipped. INVENTORY_TEST_SQL_SERVER was cleared only for the test process.
+* Passing tests cover receipt/return, adjustment/damage, successful/exact/insufficient deduction, invalid quantities, stock limits/inactive state, idempotent replay/mismatched reuse, Catalog reference validation, API permission/actor/correlation/error handling, SQL Server model/migrations and offline query translation.
+* Implemented SQL tests cover receipt commit/rollback, deduction rollback, adjustment/return consistency, exact/insufficient stock, concurrent last-unit deductions, concurrent duplicate operation retries, concurrent initial receipts and append-only history. These tests compiled but did not run against a database.
+* Unit/API tests use explicit store and Catalog test doubles; they do not prove database atomicity or concurrency. Offline query tests generate full paged read SQL and block all connection attempts.
+* Focused Catalog reference/migration regressions: 2 passed. Relevant Identity permission/model regressions: 2 passed, 1 SQL-backed permission test skipped. IDENTITY_TEST_SQL_SERVER was cleared only for the test process.
+* InitialInventory adds only Inventory schema objects. AddInventoryPermissions adds four permission definitions and Administrator grants; existing initial migrations remain unchanged.
+* Idempotent forward SQL generated and reviewed in artifacts/inventory-migration.sql and artifacts/inventory-permission-migration.sql; no destructive forward operations were found.
+* EF Core confirmed no pending Inventory or Identity model changes.
+* No live database was accessed or modified; no database was created/reset; no migration was applied; no SQL Server/LocalDB was installed or used.
+* No stock reservation, Cart, Payment, Order, pricing, refunds or future phases were implemented.
 
 ## Phase 3 Verification
 
@@ -171,11 +197,15 @@ None. Phase 3 is complete; Docker SQL Server integration verification is deferre
 
 ### Inventory
 
-Cart does not reserve stock.
-
-Inventory is deducted only after successful payment.
-
-Stock deduction must be atomic/concurrency-safe.
+* Inventory owns quantities, warehouses and movements. Catalog variant identity/kind/activation is supplied by a small explicit contract; no Catalog quantity fields or cross-module table access were added.
+* Stock is unique per warehouse/variant. Quantities are nonnegative whole units; inactive stock/warehouses expose zero available quantity.
+* All quantity changes use a conditional SQL UPDATE with OUTPUT, checked for exactly one changed row, inside the same transaction as movement and receipt/adjustment history.
+* Movements retain signed delta, before/after quantities, operation/business references, UTC timestamp, actor, reason and correlation. History is append-only through EF and protected by restrictive foreign keys.
+* Required operation IDs serialize duplicate retries with a transaction-owned application lock and unique movement index. Exact retries return the original result; changed payload/actor returns 409. A narrow creation lock protects the first stock row.
+* Existing Identity permissions are reused: inventory.view, inventory.receive, inventory.adjust and inventory.deduct. API actors come from authenticated claims.
+* Deduction is an internal IInventoryDeduction contract with no HTTP endpoint. A later verified-payment workflow must explicitly invoke it; that workflow was not implemented.
+* Cart does not reserve stock. No reservations or refund logic were added.
+* Phase 4 completion uses successful available validation as requested; database integration/concurrency tests remain deferred to Docker SQL Server.
 
 ### Payment
 
@@ -205,4 +235,4 @@ Redis is not the source of truth for financial or inventory data.
 
 ## Next Phase
 
-Phase 4 — Inventory (not started; requires a new user request). Database integration verification remains deferred to Docker SQL Server.
+Phase 5 — Cart (not started; requires a new user request). Database integration/concurrency verification remains deferred to Docker SQL Server.

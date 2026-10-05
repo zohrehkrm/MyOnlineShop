@@ -24,11 +24,17 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             new { Id = IdentityPermissions.CustomerRoleId, Name = IdentityPermissions.CustomerRole, NormalizedName = "CUSTOMER" });
         modelBuilder.Entity<Permission>().HasData(
             new { Key = IdentityPermissions.ManageUsers }, new { Key = IdentityPermissions.ManageRoles },
-            new { Key = IdentityPermissions.ManageCatalog });
+            new { Key = IdentityPermissions.ManageCatalog }, new { Key = IdentityPermissions.ViewInventory },
+            new { Key = IdentityPermissions.ReceiveInventory }, new { Key = IdentityPermissions.AdjustInventory },
+            new { Key = IdentityPermissions.DeductInventory });
         modelBuilder.Entity<RolePermission>().HasData(
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageUsers },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageRoles },
-            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageCatalog });
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageCatalog },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ViewInventory },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ReceiveInventory },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.AdjustInventory },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.DeductInventory });
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

@@ -3,6 +3,7 @@ using MyOnlineShop.Foundation;
 using MyOnlineShop.BuildingBlocks.Abstractions;
 using MyOnlineShop.Identity.Presentation;
 using MyOnlineShop.Catalog.Presentation;
+using MyOnlineShop.Inventory.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -16,6 +17,7 @@ builder.Services.AddFoundationInfrastructure(builder.Configuration);
 builder.Services.AddApiFoundation();
 builder.Services.AddIdentityModule(builder.Configuration);
 builder.Services.AddCatalogModule(builder.Configuration);
+builder.Services.AddInventoryModule(builder.Configuration);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

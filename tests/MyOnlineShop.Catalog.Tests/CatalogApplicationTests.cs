@@ -8,6 +8,23 @@ namespace MyOnlineShop.Catalog.Tests;
 public sealed class CatalogApplicationTests
 {
     [Fact]
+    public async Task Variant_reference_contract_reports_catalog_owned_kind_and_activation()
+    {
+        using var harness = new CatalogHarness();
+        var commands = harness.Services.GetRequiredService<ICatalogCommands>();
+        var references = harness.Services.GetRequiredService<ICatalogVariantReferences>();
+        var category = await commands.CreateCategoryAsync(new() { Name = "Digital", Code = "digital" }, default);
+        var product = await commands.CreateProductAsync(new() { Name = "Download", CategoryId = category.Id, Kind = "Digital" }, default);
+        var variant = await commands.AddVariantAsync(product.Id, new() { Sku = "download-base" }, default);
+        var draft = await references.GetAsync(variant.Id, default);
+        Assert.NotNull(draft); Assert.Equal("Digital", draft.ProductKind); Assert.False(draft.IsActive);
+        await commands.UpdateProductAsync(product.Id, new() { Name = "Download", CategoryId = category.Id, Kind = "Digital", Status = "Active" }, default);
+        Assert.True((await references.GetAsync(variant.Id, default))!.IsActive);
+        await commands.UpdateCategoryAsync(category.Id, new() { Name = "Digital", Code = "digital", IsActive = false }, default);
+        Assert.False((await references.GetAsync(variant.Id, default))!.IsActive);
+        Assert.Null(await references.GetAsync(Guid.NewGuid(), default));
+    }
+    [Fact]
     public async Task Category_commands_reject_cycles_inactive_parents_and_invalid_references()
     {
         using var harness = new CatalogHarness();

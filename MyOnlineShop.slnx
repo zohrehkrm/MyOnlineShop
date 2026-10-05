@@ -36,10 +36,27 @@
   <Folder Name="/src/Modules/Identity/Presentation/">
     <Project Path="src/Modules/Identity/Presentation/MyOnlineShop.Identity.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Inventory/" />
+  <Folder Name="/src/Modules/Inventory/Application/">
+    <Project Path="src/Modules/Inventory/Application/MyOnlineShop.Inventory.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/Contracts/">
+    <Project Path="src/Modules/Inventory/Contracts/MyOnlineShop.Inventory.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/Domain/">
+    <Project Path="src/Modules/Inventory/Domain/MyOnlineShop.Inventory.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/Infrastructure/">
+    <Project Path="src/Modules/Inventory/Infrastructure/MyOnlineShop.Inventory.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/Presentation/">
+    <Project Path="src/Modules/Inventory/Presentation/MyOnlineShop.Inventory.Presentation.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MyOnlineShop.Catalog.Tests/MyOnlineShop.Catalog.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj" />
+    <Project Path="tests/MyOnlineShop.Inventory.Tests/MyOnlineShop.Inventory.Tests.csproj" />
   </Folder>
   <Project Path="MyOnlineShop/MyOnlineShop.csproj" />
   <Folder Name="/BuildingBlocks/">

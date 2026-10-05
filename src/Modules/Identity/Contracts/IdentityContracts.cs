@@ -7,6 +7,10 @@ public static class IdentityPermissions
     public const string ManageUsers = "identity.users.manage";
     public const string ManageRoles = "identity.roles.manage";
     public const string ManageCatalog = "catalog.manage";
+    public const string ViewInventory = "inventory.view";
+    public const string ReceiveInventory = "inventory.receive";
+    public const string AdjustInventory = "inventory.adjust";
+    public const string DeductInventory = "inventory.deduct";
     public const string AdministratorRole = "Administrator";
     public const string CustomerRole = "Customer";
     public static readonly Guid AdministratorRoleId = Guid.Parse("00000000-0000-0000-0000-000000000001");

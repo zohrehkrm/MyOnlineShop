@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ICatalogReadStore, CatalogReadStore>();
+        services.AddScoped<ICatalogVariantReferences, CatalogVariantReferences>();
         services.AddScoped<CategoryCommands>();
         services.AddScoped<TaxonomyCommands>();
         services.AddScoped<ProductCommands>();
