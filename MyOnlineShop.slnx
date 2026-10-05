@@ -4,6 +4,22 @@
   <Folder Name="/src/BuildingBlocks/Abstractions/" />
   <Folder Name="/src/BuildingBlocks/Infrastructure/" />
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Cart/" />
+  <Folder Name="/src/Modules/Cart/Application/">
+    <Project Path="src/Modules/Cart/Application/MyOnlineShop.Cart.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Cart/Contracts/">
+    <Project Path="src/Modules/Cart/Contracts/MyOnlineShop.Cart.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Cart/Domain/">
+    <Project Path="src/Modules/Cart/Domain/MyOnlineShop.Cart.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Cart/Infrastructure/">
+    <Project Path="src/Modules/Cart/Infrastructure/MyOnlineShop.Cart.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Cart/Presentation/">
+    <Project Path="src/Modules/Cart/Presentation/MyOnlineShop.Cart.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Catalog/" />
   <Folder Name="/src/Modules/Catalog/Application/">
     <Project Path="src/Modules/Catalog/Application/MyOnlineShop.Catalog.Application.csproj" />
@@ -53,6 +69,7 @@
     <Project Path="src/Modules/Inventory/Presentation/MyOnlineShop.Inventory.Presentation.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MyOnlineShop.Cart.Tests/MyOnlineShop.Cart.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Catalog.Tests/MyOnlineShop.Catalog.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj" />

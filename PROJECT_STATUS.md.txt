@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 4 — Inventory
+Phase 5 — Cart
 
 ## Status
 
@@ -69,6 +69,14 @@ Complete under the user-approved database-free validation scope — 2026-10-05
 * InitialInventory and incremental AddInventoryPermissions migrations reviewed offline
 * Inventory unit/API/model tests passed; SQL rollback/concurrency/idempotency tests implemented and skipped
 * Inventory setup, boundaries and validation documented in INVENTORY.md
+* Cart Domain, Contracts, Application, Infrastructure and Presentation projects
+* User-owned active cart and variant items with quantities and UTC timestamps
+* Add/increment, update quantity, remove item, clear cart and read-only current cart query
+* Existing Catalog variant-reference contract reused for existence/purchasability
+* Authenticated owner-only Cart DTO endpoints using existing Identity and Foundation infrastructure
+* Cart-owned SQL Server context/schema, unique constraints, rowversion concurrency and InitialCart migration
+* Cart tests passed; SQL persistence/concurrency/Inventory-isolation tests implemented and skipped
+* Cart behavior, API and validation documented in CART.md
 
 ## Current Objective
 
@@ -78,7 +86,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 4 is complete under available validation; Docker SQL Server integration/concurrency verification is deferred.
+None. Phase 5 is complete under available validation; Docker SQL Server integration/concurrency verification is deferred.
 
 ## Completed Phases
 
@@ -87,7 +95,7 @@ None. Phase 4 is complete under available validation; Docker SQL Server integrat
 * [x] Phase 2 — Identity
 * [x] Phase 3 — Catalog
 * [x] Phase 4 — Inventory
-* [ ] Phase 5 — Cart
+* [x] Phase 5 — Cart
 * [ ] Phase 6 — Pricing & Discount
 * [ ] Phase 7 — Order & Checkout
 * [ ] Phase 8 — Payment
@@ -103,11 +111,25 @@ None. Phase 4 is complete under available validation; Docker SQL Server integrat
 
 ## Known Issues
 
+* Cart SQL runtime persistence, unique constraints, transactional rollback, rowversion concurrency and same-database Inventory isolation remain pending Docker SQL Server. Five implemented SQL-backed Cart tests are skipped while SQL Server is unavailable.
 * Inventory runtime SQL locking, affected-row behavior, relational constraints, transaction rollback and concurrent retry behavior remain unverified without SQL Server. Eight implemented SQL integration tests, including the last-unit concurrency test, are skipped pending Docker SQL Server.
 * Inventory quantities are whole SKU units. Fractional bulk measurements are outside the Phase 4 model.
 * Catalog SQL query execution, relational constraints, transaction rollback, rowversion concurrency and hierarchy application locks remain unverified against a live SQL Server. These database-dependent checks were skipped/deferred to Docker SQL Server.
 * SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime. The user explicitly deferred these integration tests to Docker SQL Server; this does not block Phase 2 completion under the revised scope.
 * SQL Server/LocalDB is not available on this machine. No SQL Server or LocalDB installation/use or persistent database modification is authorized for current validation.
+
+## Phase 5 Verification
+
+* Affected API, Cart and referenced module/BuildingBlocks projects built successfully with 0 warnings and 0 errors.
+* Cart tests: 13 passed, 0 failed, 5 SQL-backed tests skipped. CART_TEST_SQL_SERVER was cleared only for the test process.
+* Available tests cover read-only empty cart/first creation, valid/duplicate add, quantity update, remove/clear, invalid quantities/limits, invalid/inactive variants, user isolation, authenticated owner authority, API responses/errors/correlation and Inventory independence.
+* The database-free stock=1 test confirms cart quantity can be added/increased above stock without changing quantity or creating movements. Cart production projects have no Inventory or Pricing reference.
+* SQL-backed tests implement persisted CRUD/isolation, unchanged Inventory/no new movements, deterministic overlapping updates producing one success and one concurrency conflict, active-cart/item uniqueness, and rollback on invalid combined quantities. They compiled but did not access a live database.
+* Command/API tests use EF InMemory and an explicit test unit of work; they do not verify SQL constraints/transactions/concurrency. Offline SQL model/migration and read query translation checks ran with database connections blocked.
+* InitialCart and artifacts/cart-migration.sql were created and reviewed. Forward SQL adds only Cart schema objects, filtered active-user uniqueness, item uniqueness, quantity constraints and owned item relationships; no destructive forward operations were found.
+* EF Core confirmed no pending Cart model changes.
+* No live database was accessed or modified, no migration was applied, and no database was created/reset. SQL Server/LocalDB was not installed or used.
+* Foundation, Identity, Catalog and Inventory implementations were reused without redesign or module changes. No Pricing, checkout, stock reservation/deduction or later phases were implemented.
 
 ## Phase 4 Verification
 
@@ -207,6 +229,16 @@ None. Phase 4 is complete under available validation; Docker SQL Server integrat
 * Cart does not reserve stock. No reservations or refund logic were added.
 * Phase 4 completion uses successful available validation as requested; database integration/concurrency tests remain deferred to Docker SQL Server.
 
+### Cart
+
+* Cart quantity is requested quantity, never reserved stock. Cart has no Inventory/Pricing dependency and performs no inventory reads/writes/locks or movement creation.
+* One active cart per authenticated user and one item per cart/variant are enforced with unique indexes. User authority comes from the server's sub claim; item mutations are scoped to that owner's active cart.
+* GET remains read-only and returns an empty DTO when no persisted cart exists. First Add creates the cart; duplicate Add increments quantity; PUT replaces quantity; remove/clear do not validate inactive variants so users can clean up their cart.
+* Limits are 999 whole units per item and 100 distinct items. Catalog's existing variant contract provides purchasability validation for add/update; both physical and digital variants are allowed.
+* Item changes bump the root revision, causing a rowversion concurrency check inside the command transaction. Overlapping writes or uniqueness races return 409; no additional locks or Serializable isolation were introduced.
+* Cart responses contain IDs, quantities and UTC timestamps. Prices, discounts, coupons and checkout totals are neither stored nor calculated.
+* SQL-backed Cart validation is deferred to Docker SQL Server under the user's requested available-validation scope.
+
 ### Payment
 
 Payment verification is server-side.
@@ -235,4 +267,4 @@ Redis is not the source of truth for financial or inventory data.
 
 ## Next Phase
 
-Phase 5 — Cart (not started; requires a new user request). Database integration/concurrency verification remains deferred to Docker SQL Server.
+Phase 6 — Pricing & Discount (not started; requires a new user request). Database integration/concurrency verification remains deferred to Docker SQL Server.
