@@ -1,0 +1,680 @@
+# AGENTS.md — Project Instructions
+
+## 1. Purpose
+
+This file contains the stable engineering rules for this repository.
+
+Read this file before modifying code.
+
+Do not repeatedly scan the entire repository. Inspect only the files, projects, modules, and symbols relevant to the current task.
+
+---
+
+# 2. Architecture
+
+The application is an enterprise E-Commerce platform.
+
+Architecture:
+
+* Modular Monolith
+* Onion Architecture inside each module
+* CQRS
+* Repository Pattern where appropriate
+* Domain-driven module boundaries
+* REST API
+* EF Core Code First
+* SQL Server
+* JWT Authentication
+* Refresh Tokens
+* Roles and Permissions
+* Redis
+* RabbitMQ
+* Transactional Outbox
+* Background Processing
+* Audit Trail
+* Structured Logging
+* Automated Testing
+* Docker-ready
+
+The system must be designed so that modules can be extracted into microservices in the future.
+
+Do NOT implement microservices now.
+
+---
+
+# 3. Modules
+
+Expected modules:
+
+* BuildingBlocks
+* Identity
+* Catalog
+* Cart
+* Pricing
+* Discount
+* Order
+* Payment
+* Wallet
+* Inventory
+* Shipping
+* Notification
+* Reporting
+* Api
+
+Do not create additional modules unless there is a strong architectural reason.
+
+Do not merge unrelated modules.
+
+Do not create direct dependencies between module internals.
+
+Modules communicate through:
+
+* Contracts
+* Application interfaces
+* Commands/Queries
+* Domain Events
+* Integration Events
+* Explicit abstractions
+
+Avoid direct access to another module's internal entities, repositories, or tables.
+
+---
+
+# 4. Project Structure
+
+Each business module should follow Onion Architecture where practical:
+
+```text
+Module
+├── Domain
+├── Application
+├── Infrastructure
+└── Presentation
+```
+
+Typical responsibilities:
+
+### Domain
+
+Contains:
+
+* Entities
+* Value Objects
+* Domain Rules
+* Domain Events
+* Enums
+* Domain Services when truly necessary
+
+Domain must not depend on Infrastructure or API.
+
+### Application
+
+Contains:
+
+* Commands
+* Queries
+* Handlers
+* DTOs
+* Validators
+* Interfaces
+* Application services
+* Module contracts
+
+Application must not depend on API.
+
+### Infrastructure
+
+Contains:
+
+* EF Core
+* DbContext configuration
+* Repository implementations
+* External service implementations
+* Redis
+* RabbitMQ
+* Payment gateway implementations
+* Persistence concerns
+
+### Presentation
+
+Contains:
+
+* Controllers
+* API endpoints
+* Request/response models where appropriate
+
+Controllers must remain thin.
+
+Business logic belongs in Application/Domain.
+
+---
+
+# 5. BuildingBlocks
+
+BuildingBlocks must contain only genuinely shared infrastructure or abstractions.
+
+Do NOT turn BuildingBlocks into a dumping ground.
+
+Before adding anything to BuildingBlocks, determine whether it actually needs to be shared.
+
+Avoid putting business-specific logic in BuildingBlocks.
+
+---
+
+# 6. Token-Efficient Repository Inspection
+
+This is mandatory.
+
+## NEVER do this
+
+Do not:
+
+* Read the entire repository
+* Read every source file
+* Re-scan all modules for every task
+* Inspect bin/
+* Inspect obj/
+* Inspect .git/
+* Inspect node_modules/
+* Re-read files unrelated to the current task
+* Repeat architecture discovery unnecessarily
+
+## REQUIRED workflow
+
+For each task:
+
+1. Read `AGENTS.md`.
+2. Read `PROJECT_STATUS.md`.
+3. Read `ARCHITECTURE.md` only when architectural context is required.
+4. Identify the affected module/project.
+5. Search for the relevant existing types/symbols.
+6. Inspect only the relevant files and their direct dependencies.
+7. Reuse existing infrastructure whenever possible.
+8. Implement the smallest correct change.
+9. Build only affected projects first.
+10. Run the smallest relevant test set.
+11. Update `PROJECT_STATUS.md`.
+12. Stop when the requested task is complete.
+
+If an existing implementation already solves the problem, reuse it instead of creating a duplicate abstraction.
+
+---
+
+# 7. Minimal Change Principle
+
+Prefer the smallest correct change.
+
+Do not:
+
+* Refactor unrelated code
+* Rename unrelated classes
+* Reformat unrelated files
+* Change architecture unnecessarily
+* Upgrade packages without a requirement
+* Replace working infrastructure without a reason
+* Introduce abstractions only for theoretical flexibility
+
+If a broader change is genuinely required, explain why before making it.
+
+---
+
+# 8. Existing Code First
+
+Before creating:
+
+* Service
+* Repository
+* Interface
+* Helper
+* Middleware
+* Extension method
+* Base class
+* DTO
+* Infrastructure abstraction
+
+search the repository for an existing equivalent.
+
+Do not create duplicates.
+
+Follow existing project conventions unless they conflict with these architectural rules.
+
+---
+
+# 9. Database Rules
+
+Database:
+
+* SQL Server
+* EF Core
+* Code First
+* Migrations
+
+Rules:
+
+* Use decimal for monetary values.
+* Store timestamps in UTC.
+* Use appropriate indexes.
+* Use unique constraints where required.
+* Configure relationships explicitly.
+* Avoid unnecessary `Include`.
+* Prefer projection for read queries.
+* Use `AsNoTracking()` for read-only queries where appropriate.
+* Avoid N+1 queries.
+* Never expose EF entities directly through API responses.
+* Do not reset or recreate the database to solve a migration problem.
+* Never silently delete existing data.
+* Review generated migrations before applying them.
+* Do not make destructive schema changes without explicit approval.
+
+---
+
+# 10. CQRS
+
+Use CQRS consistently.
+
+Commands:
+
+* Change state.
+
+Queries:
+
+* Read state.
+
+Queries must not modify business state.
+
+Handlers should remain focused.
+
+Avoid giant handlers.
+
+Do not create CQRS abstractions that are not actually useful.
+
+---
+
+# 11. Repository Pattern
+
+Use repositories where they provide meaningful abstraction around persistence.
+
+Do not blindly create a repository for every table.
+
+Avoid leaking EF Core implementation details into Domain.
+
+Do not expose `IQueryable` across module boundaries unless explicitly justified.
+
+---
+
+# 12. API Rules
+
+Use REST conventions.
+
+Use:
+
+* Correct HTTP methods
+* Correct status codes
+* DTOs
+* Validation
+* Pagination where required
+* Filtering
+* Sorting
+* Searching
+
+API controllers must not contain business logic.
+
+Do not expose:
+
+* EF entities
+* Password hashes
+* Refresh token secrets
+* Internal infrastructure objects
+* Sensitive payment information
+
+API should support versioning, e.g.:
+
+```text
+/api/v1/...
+```
+
+---
+
+# 13. Authentication and Authorization
+
+Use:
+
+* JWT access tokens
+* Refresh tokens
+* Secure password hashing
+* Roles
+* Permissions
+* Authorization policies
+
+Authentication and authorization must be server-side.
+
+Never trust user identity or authorization information supplied by the client.
+
+Never store plaintext passwords.
+
+Never log passwords, tokens, OTPs, or secrets.
+
+---
+
+# 14. Financial Safety
+
+Financial operations require special care.
+
+Money must use `decimal`.
+
+Payment operations must be idempotent.
+
+Wallet operations must be idempotent.
+
+Refunds must be idempotent.
+
+Duplicate callbacks/messages must not cause duplicate financial operations.
+
+Use business identifiers/idempotency keys where appropriate.
+
+Never implement wallet balance changes as an unsafe blind increment.
+
+Wallet operations should create ledger transactions and update balance atomically.
+
+Never trust client-side totals.
+
+Checkout totals must always be recalculated server-side.
+
+---
+
+# 15. Inventory Safety
+
+Cart does NOT reserve inventory.
+
+Items may remain in the cart for days.
+
+Inventory remains available to other users until the checkout/payment workflow reaches the inventory deduction stage.
+
+Inventory deduction must be concurrency-safe.
+
+For example:
+
+```sql
+UPDATE Inventory
+SET Quantity = Quantity - @RequestedQuantity
+WHERE ProductVariantId = @ProductVariantId
+  AND Quantity >= @RequestedQuantity
+```
+
+Check affected rows.
+
+Exactly one concurrent buyer must win when stock is one and both request one unit.
+
+Do not implement:
+
+```text
+SELECT quantity
+then
+UPDATE quantity
+```
+
+without concurrency protection.
+
+Avoid unnecessarily broad Serializable transactions.
+
+Use atomic database operations or appropriate optimistic concurrency.
+
+---
+
+# 16. Payment and Inventory Sequence
+
+The expected business sequence is:
+
+```text
+Cart
+  ↓
+Checkout
+  ↓
+Server recalculates totals
+  ↓
+Payment
+  ↓
+Payment verified
+  ↓
+Inventory deduction
+  ↓
+Order confirmation
+```
+
+If payment succeeds but inventory cannot be deducted:
+
+```text
+PaymentSucceeded
+        ↓
+InventoryUnavailable
+        ↓
+RefundPending
+        ↓
+Outbox
+        ↓
+RabbitMQ / Background Processing
+        ↓
+Refund after required delay
+        ↓
+Wallet
+        ↓
+RefundCompleted
+```
+
+Do NOT hold an HTTP request or worker thread using a one-hour `Task.Delay`.
+
+Use durable background processing.
+
+---
+
+# 17. Transactional Outbox
+
+Important integration events must not be published directly to RabbitMQ before the database transaction commits.
+
+Expected pattern:
+
+```text
+Business transaction
+      +
+OutboxMessage
+      ↓
+Commit
+      ↓
+Outbox Publisher
+      ↓
+RabbitMQ
+```
+
+Outbox must support appropriate:
+
+* Status
+* Retry
+* Attempt count
+* Last error
+* Timestamps
+* Idempotency
+
+Do not lose important events because RabbitMQ is temporarily unavailable.
+
+---
+
+# 18. RabbitMQ
+
+RabbitMQ is for asynchronous communication where it provides real value.
+
+Examples:
+
+* Registration notifications
+* OTP
+* Email
+* SMS
+* Order notifications
+* Payment notifications
+* Wallet notifications
+* Refund processing
+* Other integration events
+
+Do NOT use RabbitMQ for every internal method call.
+
+Do not introduce asynchronous messaging merely to make the architecture look distributed.
+
+---
+
+# 19. Background Processing
+
+Background processing must be durable enough for application restarts.
+
+Do not depend on in-memory state for important business operations.
+
+Workers must handle:
+
+* Retries
+* Failures
+* Idempotency
+* Cancellation
+* Logging
+
+---
+
+# 20. Redis
+
+Redis may be used for:
+
+* Product/category/brand caching
+* OTP temporary storage
+* Rate limiting
+* Distributed coordination when justified
+
+Redis is NOT the source of truth for:
+
+* Money
+* Wallet balance
+* Inventory
+* Orders
+* Payments
+
+Cache invalidation must be explicit.
+
+---
+
+# 21. Logging
+
+Use structured logging.
+
+Useful correlation identifiers include:
+
+* CorrelationId
+* RequestId
+* UserId
+* OrderId
+* PaymentId
+* WalletTransactionId
+* InventoryMovementId
+* MessageId
+
+Never log:
+
+* Passwords
+* Access tokens
+* Refresh tokens
+* OTP codes
+* Payment secrets
+* Sensitive personal/payment information
+
+---
+
+# 22. Error Handling
+
+Use centralized exception handling.
+
+API errors must be consistent.
+
+Do not expose:
+
+* Stack traces
+* Database connection strings
+* Internal infrastructure details
+* Secrets
+
+Errors should include a correlation identifier where appropriate.
+
+Validation errors should be distinguishable from unexpected server errors.
+
+---
+
+# 23. Validation
+
+Validate input at the application/API boundary.
+
+Business invariants must also be protected inside Domain/Application logic.
+
+Never rely only on frontend validation.
+
+---
+
+# 24. Async Code
+
+Use async/await for I/O.
+
+Pass `CancellationToken` where appropriate.
+
+Never use:
+
+```csharp
+.Result
+.Wait()
+.GetAwaiter().GetResult()
+```
+
+for normal asynchronous application flow.
+
+Do not create fake async methods that perform no asynchronous work.
+
+---
+
+# 25. Testing
+
+Tests are required for important business behavior.
+
+Prioritize:
+
+### Unit tests
+
+* Domain rules
+* Pricing
+* Discounts
+* Coupons
+* Wallet rules
+* Inventory rules
+* Order state transitions
+
+### Integration tests
+
+* EF Core
+* SQL Server
+* Authentication
+* Checkout
+* Payment
+* Wallet
+* Inventory
+* Outbox
+* RabbitMQ where appropriate
+
+### Concurrency tests
+
+Especially:
+
+```text
+Stock = 1
+
+User A buys 1
+User B buys 1
+
+Only one succeeds.
+```
+
+Also test idempotency:
+
+* Duplicate payment callback
+* Duplicate refund request
+* Duplicate RabbitM

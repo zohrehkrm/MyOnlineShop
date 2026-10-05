@@ -1,0 +1,641 @@
+# ARCHITECTURE.md — Enterprise E-Commerce Platform
+
+## 1. Architecture Style
+
+The system is a:
+
+**Modular Monolith**
+
+with:
+
+**Onion Architecture inside each module**
+
+The architecture must remain suitable for future extraction of modules into microservices.
+
+Microservices are NOT implemented in the current version.
+
+---
+
+# 2. High-Level Structure
+
+```text
+src/
+├── BuildingBlocks/
+│
+├── Modules/
+│   ├── Identity/
+│   ├── Catalog/
+│   ├── Cart/
+│   ├── Pricing/
+│   ├── Discount/
+│   ├── Order/
+│   ├── Payment/
+│   ├── Wallet/
+│   ├── Inventory/
+│   ├── Shipping/
+│   ├── Notification/
+│   └── Reporting/
+│
+└── Api/
+```
+
+Each module may contain:
+
+```text
+Domain/
+Application/
+Infrastructure/
+Presentation/
+```
+
+---
+
+# 3. Module Boundaries
+
+## Identity
+
+Responsible for:
+
+* Users
+* Authentication
+* Registration
+* Login
+* JWT
+* Refresh tokens
+* Roles
+* Permissions
+* Authorization
+* Identity-related OTP
+* Identity audit
+
+Identity must not own:
+
+* Orders
+* Payments
+* Inventory
+* Product business rules
+
+---
+
+## Catalog
+
+Responsible for:
+
+* Products
+* Categories
+* Brands
+* Images
+* Attributes
+* Attribute values
+* Specifications
+* Variants
+* SKU
+* Product status
+* Product metadata
+
+Product modeling must remain generic.
+
+Do not hardcode clothing-specific concepts such as:
+
+```text
+Size
+Color
+```
+
+as mandatory Product properties.
+
+Use dynamic attributes/variant combinations.
+
+Examples:
+
+```text
+Clothing:
+Color = Black
+Size = M
+
+Mobile:
+RAM = 12GB
+Storage = 256GB
+Color = Black
+
+Cosmetics:
+Volume = 100ml
+Shade = 03
+```
+
+---
+
+## Pricing
+
+Responsible for:
+
+* Product pricing
+* Price history
+* Price rules where appropriate
+* Price calculation
+
+Pricing is intentionally separated from Catalog.
+
+---
+
+## Discount
+
+Responsible for:
+
+* Discount rules
+* Coupons
+* Campaigns
+* Festivals
+* Promotional rules
+
+Discount logic must not be hardcoded inside Product or Order.
+
+---
+
+## Cart
+
+Responsible for:
+
+* User cart
+* Cart items
+* Quantity
+* Cart lifecycle
+
+Important:
+
+**Cart does NOT reserve inventory.**
+
+Cart quantity is not a stock reservation.
+
+---
+
+## Order
+
+Responsible for:
+
+* Checkout
+* Orders
+* Order items
+* Order state
+* Order totals
+* Order history
+
+Checkout must recalculate:
+
+* Product prices
+* Discounts
+* Shipping cost
+* Taxes if applicable
+* Final payable amount
+
+Client-submitted totals are never trusted.
+
+---
+
+## Payment
+
+Responsible for:
+
+* Payment attempts
+* Payment status
+* Gateway abstraction
+* Gateway verification
+* Payment callbacks
+* Idempotency
+
+Payment must be verified server-side.
+
+---
+
+## Wallet
+
+Responsible for:
+
+* Wallet
+* Wallet ledger
+* Wallet transactions
+* User wallet charging
+* Purchases
+* Refunds
+
+Wallet must maintain an auditable ledger.
+
+Wallet operations must be atomic and idempotent.
+
+Admin wallet charge must record:
+
+* Actor
+* Target user
+* Amount
+* Reason
+* Timestamp
+* Audit information
+
+---
+
+## Inventory
+
+Responsible for:
+
+* Stock
+* Warehouses
+* Stock receipts
+* Inventory movements
+* Stock adjustments
+* Stock deduction
+* Stock availability
+
+Inventory must prevent overselling.
+
+Recommended deduction pattern:
+
+```sql
+UPDATE Inventory
+SET Quantity = Quantity - @RequestedQuantity
+WHERE ProductVariantId = @ProductVariantId
+  AND Quantity >= @RequestedQuantity
+```
+
+Success is determined by affected rows.
+
+---
+
+## Shipping
+
+Responsible for:
+
+* Shipping methods
+* Shipping cost
+* Shipment
+* Tracking
+* Shipment status
+* Delivery lifecycle
+
+Example:
+
+```text
+Pending
+Paid
+Processing
+Preparing
+ReadyForShipment
+Shipped
+OutForDelivery
+Delivered
+```
+
+Failure/cancellation/refund states must also be supported where required.
+
+---
+
+## Notification
+
+Responsible for:
+
+* Email
+* SMS
+* Application notifications
+* Notification templates
+* Notification delivery status
+
+RabbitMQ may be used for asynchronous notification processing.
+
+---
+
+## Reporting
+
+Responsible for read-optimized reporting.
+
+Examples:
+
+* Daily sales
+* Monthly sales
+* Yearly sales
+* Sales by product
+* Sales by category
+* Sales by brand
+* Sales by customer
+* New customers
+* Top customers
+* Top products
+* Low-stock products
+* Out-of-stock products
+* Revenue
+* Discounts
+* Shipping statistics
+* Payment statistics
+* Wallet charges
+* Refund statistics
+
+Reporting should favor efficient queries/projections and appropriate indexes.
+
+---
+
+# 4. Dependency Rules
+
+Preferred dependency direction:
+
+```text
+Presentation
+     ↓
+Application
+     ↓
+Domain
+```
+
+Infrastructure implements Application/Domain abstractions.
+
+Domain must not depend on Infrastructure.
+
+API must not contain business logic.
+
+A module must not directly access another module's:
+
+* DbContext internals
+* EF entities
+* repositories
+* private application services
+
+Cross-module communication should use explicit contracts.
+
+---
+
+# 5. Domain Events vs Integration Events
+
+### Domain Events
+
+Used for internal business/domain behavior.
+
+### Integration Events
+
+Used when another module or external infrastructure must react asynchronously.
+
+Integration events that must survive process failure should use:
+
+**Transactional Outbox**
+
+---
+
+# 6. Transaction Boundary
+
+For important business operations:
+
+```text
+Business State Change
++
+Outbox Record
+        ↓
+Same Database Transaction
+        ↓
+Commit
+        ↓
+Publish
+```
+
+RabbitMQ must not be the source of truth for transactional business state.
+
+---
+
+# 7. Checkout Flow
+
+Expected high-level flow:
+
+```text
+Cart
+ ↓
+Checkout request
+ ↓
+Load current product/pricing/discount data
+ ↓
+Calculate totals on server
+ ↓
+Create payment request
+ ↓
+Payment succeeds
+ ↓
+Verify payment server-side
+ ↓
+Atomically deduct inventory
+ ↓
+Create/confirm order state
+ ↓
+Publish integration events through Outbox
+```
+
+---
+
+# 8. Payment + Inventory Failure
+
+If:
+
+```text
+Payment = Successful
+Inventory = Unavailable
+```
+
+then:
+
+```text
+InventoryUnavailable
+        ↓
+RefundPending
+        ↓
+Outbox
+        ↓
+RabbitMQ / Background Processing
+        ↓
+Delayed processing
+        ↓
+Refund
+        ↓
+Wallet
+        ↓
+RefundCompleted
+```
+
+The refund must be idempotent.
+
+Do not block a thread for one hour.
+
+---
+
+# 9. Inventory Concurrency
+
+Example:
+
+```text
+Stock = 1
+
+User A requests 1
+User B requests 1
+```
+
+Expected:
+
+```text
+User A → Success
+User B → Failure
+```
+
+or vice versa.
+
+Never allow:
+
+```text
+Stock = -1
+```
+
+or two successful deductions from one unit.
+
+---
+
+# 10. Redis
+
+Redis is an optimization/infrastructure component.
+
+Suitable:
+
+* Cache
+* OTP temporary storage
+* Rate limiting
+* Distributed coordination where justified
+
+Not suitable as the authoritative source for:
+
+* Inventory
+* Wallet
+* Payment
+* Orders
+
+---
+
+# 11. RabbitMQ
+
+RabbitMQ is used for asynchronous integration/background workflows.
+
+Examples:
+
+```text
+Registration → Notification
+OTP → Notification
+Order → Notification
+Payment → Notification
+Wallet → Notification
+Refund → Background Processing
+```
+
+Do not use RabbitMQ as a replacement for normal in-process method calls.
+
+---
+
+# 12. Security Architecture
+
+Authentication:
+
+```text
+User
+ ↓
+Login
+ ↓
+Access Token + Refresh Token
+```
+
+Authorization:
+
+```text
+User
+ ↓
+Roles
+ ↓
+Permissions
+ ↓
+Policy
+ ↓
+Endpoint
+```
+
+Sensitive credentials must come from secure configuration.
+
+---
+
+# 13. Data Ownership
+
+Each module owns its business data.
+
+Examples:
+
+```text
+Catalog → Product data
+Inventory → Stock data
+Order → Order data
+Payment → Payment data
+Wallet → Wallet ledger
+Shipping → Shipment data
+```
+
+Do not create a giant shared database abstraction that allows every module to modify everything.
+
+---
+
+# 14. Testing Architecture
+
+Critical business behavior must be testable independently.
+
+Important scenarios:
+
+### Inventory concurrency
+
+```text
+Stock = 1
+Two buyers
+Only one succeeds
+```
+
+### Payment idempotency
+
+```text
+Same callback twice
+→ One successful payment state
+```
+
+### Refund idempotency
+
+```text
+Same refund event twice
+→ One refund
+```
+
+### Wallet idempotency
+
+```text
+Same operation twice
+→ One ledger transaction
+```
+
+### Outbox reliability
+
+```text
+DB commit succeeds
+RabbitMQ unavailable
+→ Outbox remains pending
+→ Later retry
+```
+
+---
+
+# 15. Architectural Priorities
+
+When making implementation decisions, prioritize:
+
+1. Correctness
+2. Data consistency
+3. Financial safety
+4. Inventory safety
+5. Security
+6. Maintainability
+7. Testability
+8. Performance
+9. Extensibility
+10. Convenience
+
+Do not sacrifice correctness for premature optimization.

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="MyOnlineShop/MyOnlineShop.csproj" />
+  <Folder Name="/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Abstractions/MyOnlineShop.BuildingBlocks.Abstractions.csproj" />
+    <Project Path="src/BuildingBlocks/Infrastructure/MyOnlineShop.BuildingBlocks.Infrastructure.csproj" />
+  </Folder>
+</Solution>

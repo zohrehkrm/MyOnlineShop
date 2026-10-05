@@ -1,0 +1,103 @@
+# PROJECT_STATUS.md
+
+## Current Phase
+
+Phase 0 — Architecture Design
+
+## Status
+
+Not started
+
+## Completed
+
+* Project requirements defined
+* Modular Monolith selected
+* Onion Architecture selected
+* CQRS selected
+* Repository Pattern selected
+* SQL Server selected
+* EF Core Code First selected
+* JWT authentication selected
+* Redis selected
+* RabbitMQ selected
+* Transactional Outbox selected
+* Background Processing selected
+* Wallet ledger selected
+* Atomic inventory deduction selected
+* Microservice-ready architecture selected
+* Microservices explicitly deferred
+
+## Current Objective
+
+Design and implement the enterprise E-Commerce platform incrementally.
+
+The current implementation must follow the phase requested by the user.
+
+## Active Work
+
+None.
+
+## Completed Phases
+
+* [ ] Phase 0 — Architecture Design
+* [ ] Phase 1 — Foundation
+* [ ] Phase 2 — Identity
+* [ ] Phase 3 — Catalog
+* [ ] Phase 4 — Inventory
+* [ ] Phase 5 — Cart
+* [ ] Phase 6 — Pricing & Discount
+* [ ] Phase 7 — Order & Checkout
+* [ ] Phase 8 — Payment
+* [ ] Phase 9 — Wallet
+* [ ] Phase 10 — Outbox & RabbitMQ
+* [ ] Phase 11 — Refund Processing
+* [ ] Phase 12 — Shipping
+* [ ] Phase 13 — Redis
+* [ ] Phase 14 — Reporting
+* [ ] Phase 15 — Admin & Warehouse APIs
+* [ ] Phase 16 — Testing & Hardening
+* [ ] Phase 17 — Docker & Documentation
+
+## Known Issues
+
+None.
+
+## Important Decisions
+
+### Inventory
+
+Cart does not reserve stock.
+
+Inventory is deducted only after successful payment.
+
+Stock deduction must be atomic/concurrency-safe.
+
+### Payment
+
+Payment verification is server-side.
+
+Payment operations must be idempotent.
+
+### Wallet
+
+Wallet uses a ledger.
+
+Refunds are idempotent.
+
+### Refund
+
+If payment succeeds but inventory is unavailable, refund processing is asynchronous and delayed.
+
+Do not block a request/thread for one hour.
+
+### Messaging
+
+Important integration events use Transactional Outbox before RabbitMQ publication.
+
+### Redis
+
+Redis is not the source of truth for financial or inventory data.
+
+## Next Phase
+
+Phase 0 — Architecture Design
