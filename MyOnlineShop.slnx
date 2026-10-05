@@ -36,6 +36,22 @@
   <Folder Name="/src/Modules/Catalog/Presentation/">
     <Project Path="src/Modules/Catalog/Presentation/MyOnlineShop.Catalog.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Discount/" />
+  <Folder Name="/src/Modules/Discount/Application/">
+    <Project Path="src/Modules/Discount/Application/MyOnlineShop.Discount.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Discount/Contracts/">
+    <Project Path="src/Modules/Discount/Contracts/MyOnlineShop.Discount.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Discount/Domain/">
+    <Project Path="src/Modules/Discount/Domain/MyOnlineShop.Discount.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Discount/Infrastructure/">
+    <Project Path="src/Modules/Discount/Infrastructure/MyOnlineShop.Discount.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Discount/Presentation/">
+    <Project Path="src/Modules/Discount/Presentation/MyOnlineShop.Discount.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Identity/" />
   <Folder Name="/src/Modules/Identity/Application/">
     <Project Path="src/Modules/Identity/Application/MyOnlineShop.Identity.Application.csproj" />
@@ -68,12 +84,29 @@
   <Folder Name="/src/Modules/Inventory/Presentation/">
     <Project Path="src/Modules/Inventory/Presentation/MyOnlineShop.Inventory.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Pricing/" />
+  <Folder Name="/src/Modules/Pricing/Application/">
+    <Project Path="src/Modules/Pricing/Application/MyOnlineShop.Pricing.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Pricing/Contracts/">
+    <Project Path="src/Modules/Pricing/Contracts/MyOnlineShop.Pricing.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Pricing/Domain/">
+    <Project Path="src/Modules/Pricing/Domain/MyOnlineShop.Pricing.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Pricing/Infrastructure/">
+    <Project Path="src/Modules/Pricing/Infrastructure/MyOnlineShop.Pricing.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Pricing/Presentation/">
+    <Project Path="src/Modules/Pricing/Presentation/MyOnlineShop.Pricing.Presentation.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MyOnlineShop.Cart.Tests/MyOnlineShop.Cart.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Catalog.Tests/MyOnlineShop.Catalog.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Inventory.Tests/MyOnlineShop.Inventory.Tests.csproj" />
+    <Project Path="tests/MyOnlineShop.PricingDiscount.Tests/MyOnlineShop.PricingDiscount.Tests.csproj" />
   </Folder>
   <Project Path="MyOnlineShop/MyOnlineShop.csproj" />
   <Folder Name="/BuildingBlocks/">

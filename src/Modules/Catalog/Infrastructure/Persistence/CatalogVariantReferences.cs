@@ -6,6 +6,19 @@ namespace MyOnlineShop.Catalog.Infrastructure.Persistence;
 
 internal sealed class CatalogVariantReferences(CatalogDbContext context) : ICatalogVariantReferences
 {
+    public async Task<IReadOnlyList<CatalogVariantReference>> GetManyAsync(IReadOnlyList<Guid> variantIds, CancellationToken ct)
+    {
+        return await (from variant in context.Variants.AsNoTracking()
+                      join product in context.Products.AsNoTracking() on variant.ProductId equals product.Id
+                      where variantIds.Contains(variant.Id)
+                      select new CatalogVariantReference(variant.Id, variant.Sku, product.Kind.ToString(),
+                          variant.IsActive && product.Status == ProductStatus.Active &&
+                          context.Categories.Any(category => category.Id == product.CategoryId && category.IsActive) &&
+                          (product.BrandId == null || context.Brands.Any(brand => brand.Id == product.BrandId && brand.IsActive)) &&
+                          variant.Values.All(selection => context.AttributeValues.Any(value => value.Id == selection.ValueId && value.IsActive) &&
+                              context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive)), product.Id, product.CategoryId))
+            .ToListAsync(ct);
+    }
     public Task<CatalogVariantReference?> GetAsync(Guid variantId, CancellationToken ct) =>
         (from variant in context.Variants.AsNoTracking()
          join product in context.Products.AsNoTracking() on variant.ProductId equals product.Id
@@ -15,6 +28,6 @@ internal sealed class CatalogVariantReferences(CatalogDbContext context) : ICata
              context.Categories.Any(category => category.Id == product.CategoryId && category.IsActive) &&
              (product.BrandId == null || context.Brands.Any(brand => brand.Id == product.BrandId && brand.IsActive)) &&
              variant.Values.All(selection => context.AttributeValues.Any(value => value.Id == selection.ValueId && value.IsActive) &&
-                 context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive))))
+                 context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive)), product.Id, product.CategoryId))
         .SingleOrDefaultAsync(ct);
 }

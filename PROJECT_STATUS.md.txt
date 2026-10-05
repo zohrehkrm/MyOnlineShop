@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 5 — Cart
+Phase 6 — Pricing & Discount
 
 ## Status
 
@@ -77,6 +77,16 @@ Complete under the user-approved database-free validation scope — 2026-10-05
 * Cart-owned SQL Server context/schema, unique constraints, rowversion concurrency and InitialCart migration
 * Cart tests passed; SQL persistence/concurrency/Inventory-isolation tests implemented and skipped
 * Cart behavior, API and validation documented in CART.md
+* Pricing and Discount Domain, Contracts, Application, Infrastructure and Presentation projects
+* Variant/currency-owned prices, optional compare prices, effective periods, activation and append-only price history
+* SQL schedule locks, overlap validation, rowversion and transactional price/history persistence
+* Percentage/fixed discount rules, dates, priority, minimum subtotal, usage eligibility, coupons and Catalog targeting
+* Central decimal calculation with deterministic single-rule selection, currency rounding and nonnegative prices
+* Authenticated pricing/discount DTO APIs and existing pricing.manage/discount.manage permission policies
+* Fresh owner-only Cart pricing preview with no authoritative totals persisted in Cart or Inventory mutations
+* InitialPricing, InitialDiscount and incremental AddPricingDiscountPermissions migrations reviewed offline
+* Phase 6 build and all available tests passed; SQL runtime verification remains deferred
+* Pricing/Discount API, boundaries, calculation and persistence decisions documented in PRICING_DISCOUNT.md
 
 ## Current Objective
 
@@ -86,7 +96,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 5 is complete under available validation; Docker SQL Server integration/concurrency verification is deferred.
+None. Phase 6 is complete under available validation; SQL Server integration/concurrency verification is deferred to a future authorized environment.
 
 ## Completed Phases
 
@@ -96,7 +106,7 @@ None. Phase 5 is complete under available validation; Docker SQL Server integrat
 * [x] Phase 3 — Catalog
 * [x] Phase 4 — Inventory
 * [x] Phase 5 — Cart
-* [ ] Phase 6 — Pricing & Discount
+* [x] Phase 6 — Pricing & Discount
 * [ ] Phase 7 — Order & Checkout
 * [ ] Phase 8 — Payment
 * [ ] Phase 9 — Wallet
@@ -111,12 +121,33 @@ None. Phase 5 is complete under available validation; Docker SQL Server integrat
 
 ## Known Issues
 
+* Pricing/Discount SQL runtime persistence, schedule locking, transaction rollback, rowversion and Cart/Inventory isolation remain unverified without SQL Server. Five implemented Phase 6 SQL tests are explicitly skipped.
+* Discount previews never consume usage. Usage limits/counts support eligibility, but accepted-order redemption and atomic usage accounting belong to a future checkout/order workflow.
+* Pricing previews are informational snapshots across module-owned contexts, not binding checkout totals. A later checkout must recalculate and define acceptance boundaries.
 * Cart SQL runtime persistence, unique constraints, transactional rollback, rowversion concurrency and same-database Inventory isolation remain pending Docker SQL Server. Five implemented SQL-backed Cart tests are skipped while SQL Server is unavailable.
 * Inventory runtime SQL locking, affected-row behavior, relational constraints, transaction rollback and concurrent retry behavior remain unverified without SQL Server. Eight implemented SQL integration tests, including the last-unit concurrency test, are skipped pending Docker SQL Server.
 * Inventory quantities are whole SKU units. Fractional bulk measurements are outside the Phase 4 model.
 * Catalog SQL query execution, relational constraints, transaction rollback, rowversion concurrency and hierarchy application locks remain unverified against a live SQL Server. These database-dependent checks were skipped/deferred to Docker SQL Server.
 * SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime. The user explicitly deferred these integration tests to Docker SQL Server; this does not block Phase 2 completion under the revised scope.
 * SQL Server/LocalDB is not available on this machine. No SQL Server or LocalDB installation/use or persistent database modification is authorized for current validation.
+
+## Phase 6 Verification
+
+* Affected API and Pricing/Discount test projects built successfully with 0 warnings and 0 errors.
+* Pricing/Discount tests: 35 passed, 0 failed, 5 SQL-backed tests skipped.
+* Regression suites: Cart 13 passed/5 skipped; Catalog 27 passed; Identity 23 passed/13 skipped; Inventory 15 passed/8 skipped; Foundation 15 passed/1 skipped. Total: 128 passed, 0 failed, 32 SQL-dependent tests skipped.
+* SQL test environment variables were cleared only for the test processes; no live SQL Server was accessed.
+* Available validation covers price create/current/batch/update/status/history, active overlap and half-open scheduling, variant/currency/money/date validation, discount examples, zero floor, rounding, quantity/subtotal, coupons, usage eligibility, effective periods, priorities/ties and variant/product/category targeting.
+* HTTP tests verify permission policies, server actor/owner authority, DTOs/status/error/correlation contracts, ignored client monetary fields and fresh Cart repricing after authoritative price changes.
+* Existing stock=1 Cart regression confirms add/update above stock leaves stock and movements unchanged. Catalog retains no Pricing dependency and Cart production projects retain no Pricing/Discount/Inventory dependency.
+* Database-free command/API tests use EF InMemory and explicit substitute transaction units. They do not verify SQL transactions, constraints or concurrency.
+* SQL-backed Phase 6 tests implement persisted current/history/status behavior, exactly one overlapping concurrent price-create winner, status serialization after waiting for the schedule lock, flushed price/history rollback and stale rowversion detection, and Cart/Inventory/usage isolation. They compiled and were skipped because SQL Server is unavailable.
+* Offline SQL Server model/migration and read-projection translation checks passed, including Catalog's batch variant reference query, with connection opening blocked.
+* InitialPricing, InitialDiscount and AddPricingDiscountPermissions were created and reviewed. Forward SQL creates owned pricing/discount objects and adds two Identity permissions/Administrator grants, without destructive forward changes or edits to earlier migrations.
+* Reviewed scripts: artifacts/pricing-migration.sql, artifacts/discount-migration.sql and artifacts/pricing-discount-permissions.sql. EF confirmed no pending Pricing, Discount or Identity model changes.
+* Money paths use decimal with decimal(18,4) SQL storage. Catalog references cross boundaries only through contracts. Client preview inputs contain no price, discount amount, subtotal or payable amount.
+* No migration was applied, no database was created/reset/modified, and no SQL Server/LocalDB/Docker was installed or used.
+* No Phase 7 or later functionality was implemented.
 
 ## Phase 5 Verification
 
@@ -239,6 +270,19 @@ None. Phase 5 is complete under available validation; Docker SQL Server integrat
 * Cart responses contain IDs, quantities and UTC timestamps. Prices, discounts, coupons and checkout totals are neither stored nor calculated.
 * SQL-backed Cart validation is deferred to Docker SQL Server under the user's requested available-validation scope.
 
+### Pricing and Discount
+
+* Pricing owns variant/currency price schedules and immutable audit snapshots. Compare price is informational and cannot be lower than base price.
+* Active periods use inclusive start/exclusive end. Narrow transaction-owned SQL application locks precede mutable price loading and overlap checks; rowversion adds stale-write protection.
+* Supported currencies: IRR uses whole units; USD/EUR/GBP/AED/TRY use two decimal places. Inputs must respect currency precision; unit savings round midpoint away from zero before quantity multiplication.
+* Exactly one discount per line: highest priority, greatest rounded saving, then smallest GUID. Fixed savings are per unit and clamp to base price. Discounts do not stack.
+* A rule targets one variant, product, exact category or all products. Codes normalize uppercase. MinimumOrderAmount uses the server-calculated base subtotal across preview lines; category descendants and currency conversion are deferred.
+* UsedCount/UsageLimit eligibility is persisted but previews never redeem/consume usage. Atomic accepted-order redemption is deferred.
+* Catalog's reference contract supplies product/category IDs and a batched SQL projection. Catalog still owns no authoritative prices; Cart still persists quantities only.
+* Cart pricing is hosted by Pricing Presentation through Cart.Contracts, uses authenticated ownership, reloads current prices and does not read/write/reserve Inventory.
+* Existing Identity permission handling is extended with pricing.manage and discount.manage through an incremental seed migration. Foundation/Identity infrastructure was reused without redesign.
+* Pricing quotes are informational previews. Checkout must recalculate in a later phase. SQL runtime verification remains deferred.
+
 ### Payment
 
 Payment verification is server-side.
@@ -267,4 +311,4 @@ Redis is not the source of truth for financial or inventory data.
 
 ## Next Phase
 
-Phase 6 — Pricing & Discount (not started; requires a new user request). Database integration/concurrency verification remains deferred to Docker SQL Server.
+Phase 7 — Order & Checkout (not started; requires a new user request). Database integration/concurrency verification remains deferred to a future authorized SQL Server environment.

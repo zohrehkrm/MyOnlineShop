@@ -39,7 +39,8 @@ public sealed class AdministrationCommands(IIdentityStore store, IIdentityPasswo
     public async Task SetRolePermissionAsync(Guid actorId, Guid roleId, string permission, bool assigned, CancellationToken cancellationToken)
     {
         if (permission is not (IdentityPermissions.ManageUsers or IdentityPermissions.ManageRoles or IdentityPermissions.ManageCatalog or
-            IdentityPermissions.ViewInventory or IdentityPermissions.ReceiveInventory or IdentityPermissions.AdjustInventory or IdentityPermissions.DeductInventory))
+            IdentityPermissions.ViewInventory or IdentityPermissions.ReceiveInventory or IdentityPermissions.AdjustInventory or IdentityPermissions.DeductInventory or
+            IdentityPermissions.ManagePricing or IdentityPermissions.ManageDiscount))
             throw new IdentityException("validation_error", 400, "Permission is not part of the supported permission catalog.");
         await store.InTransactionAsync(async ct =>
         {

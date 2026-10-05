@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Infrastructure/MyOnlineShop.Pricing.Infrastructure.csproj" />
+    <ProjectReference Include="../../Identity/Contracts/MyOnlineShop.Identity.Contracts.csproj" />
+    <ProjectReference Include="../../Cart/Contracts/MyOnlineShop.Cart.Contracts.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>
