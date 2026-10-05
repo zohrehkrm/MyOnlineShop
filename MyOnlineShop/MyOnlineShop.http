@@ -1,6 +1,7 @@
 @MyOnlineShop_HostAddress = http://localhost:5039
 
-GET {{MyOnlineShop_HostAddress}}/weatherforecast/
+GET {{MyOnlineShop_HostAddress}}/api/v1/health
 Accept: application/json
+X-Correlation-ID: foundation-check
 
 ###

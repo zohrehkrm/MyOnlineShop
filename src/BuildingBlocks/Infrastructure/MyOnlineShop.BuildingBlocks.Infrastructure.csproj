@@ -3,6 +3,8 @@
   <ItemGroup>
     <ProjectReference Include="../Abstractions/MyOnlineShop.BuildingBlocks.Abstractions.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+    <!-- Security fix for the transitive SQL client XML dependency. -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="9.0.18" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

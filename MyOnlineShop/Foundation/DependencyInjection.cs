@@ -12,7 +12,8 @@ public static class DependencyInjection
         services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
             ApiProblemDetails.Enrich(context.HttpContext, context.ProblemDetails));
         services.AddExceptionHandler<GlobalExceptionHandler>();
-        services.AddControllers().ConfigureApiBehaviorOptions(options =>
+        services.AddControllers(options => options.Filters.Add<ApiProblemDetailsFilter>())
+            .ConfigureApiBehaviorOptions(options =>
         {
             options.InvalidModelStateResponseFactory = context =>
             {

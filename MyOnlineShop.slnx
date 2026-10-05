@@ -1,7 +1,11 @@
 <Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
+  </Folder>
   <Project Path="MyOnlineShop/MyOnlineShop.csproj" />
   <Folder Name="/BuildingBlocks/">
     <Project Path="src/BuildingBlocks/Abstractions/MyOnlineShop.BuildingBlocks.Abstractions.csproj" />
     <Project Path="src/BuildingBlocks/Infrastructure/MyOnlineShop.BuildingBlocks.Infrastructure.csproj" />
   </Folder>
 </Solution>
+ 
