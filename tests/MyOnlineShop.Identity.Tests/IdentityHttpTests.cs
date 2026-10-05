@@ -28,6 +28,9 @@ public sealed class IdentityHttpFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        // This provider configuration is used only for offline model/script checks; no connection is opened.
+        builder.UseSetting("ConnectionStrings:SqlServer",
+            "Server=localhost;Database=IdentityOfflineTests;Integrated Security=True");
         builder.UseSetting("IdentitySecurity:SigningKeyBase64", Key);
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));
         builder.ConfigureServices(services =>
@@ -211,7 +214,8 @@ public sealed class IdentityHttpTests
         var context = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
         Assert.Equal("Microsoft.EntityFrameworkCore.SqlServer", context.Database.ProviderName);
         Assert.All(context.Model.GetEntityTypes(), entity => Assert.Equal("identity", entity.GetSchema()));
-        Assert.Single(context.Database.GetMigrations());
+        Assert.Contains(context.Database.GetMigrations(), migration => migration.EndsWith("_InitialIdentity", StringComparison.Ordinal));
+        Assert.Contains(context.Database.GetMigrations(), migration => migration.EndsWith("_AddCatalogPermission", StringComparison.Ordinal));
         var script = context.GetService<IMigrator>().GenerateScript(options: MigrationsSqlGenerationOptions.Idempotent);
         Assert.Contains("CREATE UNIQUE INDEX [IX_Users_NormalizedEmail]", script);
         Assert.Contains("CREATE UNIQUE INDEX [IX_Users_PhoneNumber]", script);

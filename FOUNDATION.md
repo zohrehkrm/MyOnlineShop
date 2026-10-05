@@ -13,7 +13,7 @@ dotnet restore MyOnlineShop.slnx
 dotnet run --project MyOnlineShop --launch-profile https
 ```
 
-Development uses SQL Server LocalDB with integrated authentication. Production requires `ConnectionStrings__SqlServer` from environment variables or a secret provider; no production credentials are checked in. `Database__CommandTimeoutSeconds` (1–300) and `Database__MaxRetryCount` (0–10) override validated database settings.
+Development and production require `ConnectionStrings__SqlServer` from environment variables or a secret provider. There is no LocalDB fallback and no checked-in database credential. SQL Server integration tests are deferred to Docker SQL Server. `Database__CommandTimeoutSeconds` (1–300) and `Database__MaxRetryCount` (0–10) override validated database settings.
 
 Development documentation: `/swagger/index.html` and `/openapi/v1.json`. Both are disabled outside Development. `/api/v1/health` reports process liveness only and does not promise database readiness.
 
@@ -44,7 +44,7 @@ dotnet test tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.cs
 
 HTTP integration tests exercise the actual pipeline, SQL Server provider registration and offline migration-script generation. Test-only controllers are registered by the test host, not shipped as application endpoints.
 
-The optional SQL connectivity test reads `FOUNDATION_TEST_SQL_SERVER` and executes `SELECT 1`; it makes no schema or data changes. Use an existing test database or LocalDB `master`. Without this variable, that test is explicitly skipped.
+The optional SQL connectivity test reads `FOUNDATION_TEST_SQL_SERVER` and executes `SELECT 1`; it makes no schema or data changes. Use Docker SQL Server when database integration testing is authorized. Without this variable, that test is explicitly skipped.
 
 Compatible security fixes are pinned for `Microsoft.OpenApi` and the SQL client's transitive `System.Security.Cryptography.Xml` dependency after NuGet audit warnings. Other existing package versions remain unchanged.
 

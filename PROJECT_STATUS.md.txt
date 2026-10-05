@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 2 — Identity
+Phase 3 — Catalog
 
 ## Status
 
-Implementation finished; SQL-backed verification pending — 2026-10-05
+Complete under the user-approved database-free validation scope — 2026-10-05
 
 ## Completed
 
@@ -48,6 +48,17 @@ Implementation finished; SQL-backed verification pending — 2026-10-05
 * Explicit one-time administrator provisioning from secure configuration; no default credentials
 * Identity API DTOs reuse Foundation response/error and correlation infrastructure
 * Identity setup/security decisions documented in IDENTITY.md
+* Phase 2 affected build and database-free tests passed; database integration tests explicitly deferred by the user to Docker SQL Server
+* Development LocalDB fallback removed; SQL Server connection settings remain externally configured
+* Catalog Domain, Contracts, Application, Infrastructure and Presentation projects
+* Category hierarchy and active state, brands, reusable dynamic attributes and values
+* Generic physical/digital products, unique variants/SKUs and validated attribute combinations
+* Ordered HTTPS images, primary image, independent specifications and product metadata
+* Catalog commands, queries, aggregate repositories and SQL Server-owned catalog schema
+* DTO APIs with create/update/get/list/search/filter operations and catalog.manage permission
+* InitialCatalog and incremental AddCatalogPermission migrations created and reviewed offline
+* Catalog usage and persistence decisions documented in CATALOG.md
+* Phase 3 affected build and focused database-free tests passed
 
 ## Current Objective
 
@@ -57,14 +68,14 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-Awaiting SQL-backed Identity verification; no further implementation phase is active.
+None. Phase 3 is complete; Docker SQL Server integration verification is deferred.
 
 ## Completed Phases
 
 * [x] Phase 0 — Architecture Design
 * [x] Phase 1 — Foundation
-* [ ] Phase 2 — Identity
-* [ ] Phase 3 — Catalog
+* [x] Phase 2 — Identity
+* [x] Phase 3 — Catalog
 * [ ] Phase 4 — Inventory
 * [ ] Phase 5 — Cart
 * [ ] Phase 6 — Pricing & Discount
@@ -82,13 +93,29 @@ Awaiting SQL-backed Identity verification; no further implementation phase is ac
 
 ## Known Issues
 
-* The LocalDB test command was declined. SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime.
-* Phase 2 is not marked complete until the SQL-backed suite passes. No application database has been modified.
+* Catalog SQL query execution, relational constraints, transaction rollback, rowversion concurrency and hierarchy application locks remain unverified against a live SQL Server. These database-dependent checks were skipped/deferred to Docker SQL Server.
+* SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime. The user explicitly deferred these integration tests to Docker SQL Server; this does not block Phase 2 completion under the revised scope.
+* SQL Server/LocalDB is not available on this machine. No SQL Server or LocalDB installation/use or persistent database modification is authorized for current validation.
+
+## Phase 3 Verification
+
+* Affected API, Catalog, Identity and BuildingBlocks projects built successfully with 0 warnings and 0 errors.
+* Catalog tests: 26 passed, 0 failed. They cover hierarchy rules, product creation/update, dynamic attributes, variants/SKU uniqueness, invalid combinations/references, validation, API responses/correlation and permission enforcement.
+* Relevant Identity permission/model regression tests: 2 passed, 0 failed, 1 SQL-backed permission test skipped. IDENTITY_TEST_SQL_SERVER was cleared only for the test process.
+* Command/query/API tests explicitly use EF InMemory and a test unit of work. They do not verify SQL Server transactions, constraints, query execution or concurrency.
+* Offline SQL Server model/migration checks verify schema ownership, unique indexes and composite relationships; both Catalog and Identity have no pending model changes.
+* InitialCatalog adds only Catalog schema objects. AddCatalogPermission adds only the catalog.manage permission and Administrator grant; the original InitialIdentity migration remains unchanged.
+* Idempotent forward scripts generated and reviewed: artifacts/catalog-migration.sql and artifacts/catalog-permission-migration.sql. No destructive forward operations were found.
+* No database was accessed, created, reset or modified; no migration was applied. No SQL Server/LocalDB was installed or used.
+* No pricing, quantities, stock reservation, Inventory or other later-phase functionality was implemented.
 
 ## Phase 2 Verification
 
 * Affected API, Identity, BuildingBlocks and Identity test projects built successfully: 0 warnings, 0 errors.
 * Identity tests: 23 passed, 0 failed, 13 SQL-backed tests skipped.
+* Of the 23 passing Identity tests, 15 are unit/rule tests and 8 exercise the database-free HTTP pipeline or offline EF model/migration checks.
+* Foundation regression tests after removing the LocalDB fallback: 15 passed, 0 failed, 1 database-dependent test skipped.
+* Database-test connection environment variables were cleared only for the test processes so fixtures could not connect to a database.
 * Passing tests cover registration, hashing, login/invalid credentials, lockout, JWT signature/issuer/audience/expiration/claims, refresh rotation/replay, logout, role/permission authorization, activation, safe logging and validation.
 * HTTP tests use the actual API pipeline with an explicit in-memory Identity repository test double; they do not verify SQL transactions or database constraints.
 * Offline checks verify the actual SQL Server EF model and generated unique indexes and schema ownership.
@@ -96,7 +123,7 @@ Awaiting SQL-backed Identity verification; no further implementation phase is ac
 * EF Core confirmed no pending model changes.
 * No migration was applied, no database was created/reset, and no default credentials were seeded.
 * NuGet security metadata was refreshed; the final affected build has no audit warnings.
-* Full SQL suite is ready in tests/MyOnlineShop.Identity.Tests. It requires IDENTITY_TEST_SQL_SERVER and an explicitly permitted temporary database fixture.
+* Full SQL suite is ready in tests/MyOnlineShop.Identity.Tests and is deferred to Docker SQL Server. It requires IDENTITY_TEST_SQL_SERVER and an explicitly permitted temporary database fixture inside the container.
 
 ## Phase 1 Verification
 
@@ -127,6 +154,20 @@ Awaiting SQL-backed Identity verification; no further implementation phase is ac
 * Initial administrator creation is an explicit one-time command using secure configuration, guarded by a SQL application lock. No bootstrap endpoint exists.
 * Shared ApiResponse moved to BuildingBlocks Abstractions for module reuse. Foundation's existing exception pipeline accepts safe application errors; the Foundation was not redesigned.
 * No OTP/SMS, RabbitMQ, Redis or Phase 3+ business functionality was added.
+* Per the user's revised instructions, Phase 2 completion requires the affected build and database-free tests. Database-dependent tests are skipped and will run later using Docker SQL Server.
+* SQL Server EF Core Code First and migrations remain configured. There is no development LocalDB connection fallback.
+
+### Catalog
+
+* Product remains generic; variant dimensions are reusable attribute/value records rather than hardcoded clothing fields.
+* Variant IDs are stable GUIDs. SKUs are normalized uppercase and globally unique within Catalog; sorted attribute combinations are unique within each product.
+* A simple product has one base SKU. Variant attribute dimensions cannot change after variants exist, and options used by variants cannot be removed.
+* Specifications and bounded metadata are independent of variant selections. Images use ordered HTTPS URLs; upload/storage infrastructure is deferred.
+* Products start Draft, and publishing requires an active variant. Public reads hide inactive product references and inactive variant attributes/values.
+* PUT product replaces its details/options and preserves variants. Weight is in grams and dimensions in millimeters; digital products cannot carry physical measurements.
+* Catalog owns its schema, context and migration history. Commands use transactions and root rowversion concurrency; category hierarchy mutations additionally use a SQL application lock.
+* Existing Identity authorization is reused through catalog.manage. The permission is added with an incremental seed migration, without redesigning Identity.
+* SQL integration verification is deferred to Docker SQL Server under the user's current validation scope.
 
 ### Inventory
 
@@ -164,4 +205,4 @@ Redis is not the source of truth for financial or inventory data.
 
 ## Next Phase
 
-Phase 2 — finish SQL-backed verification. Phase 3 remains not started.
+Phase 4 — Inventory (not started; requires a new user request). Database integration verification remains deferred to Docker SQL Server.

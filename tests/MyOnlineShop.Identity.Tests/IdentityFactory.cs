@@ -22,7 +22,7 @@ public sealed class IdentitySqlFactAttribute : FactAttribute
     public IdentitySqlFactAttribute()
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("IDENTITY_TEST_SQL_SERVER")))
-            Skip = "Set IDENTITY_TEST_SQL_SERVER to an existing SQL Server master connection for isolated integration tests.";
+            Skip = "Database-dependent test deferred. Set IDENTITY_TEST_SQL_SERVER to a Docker SQL Server master connection when integration testing is authorized.";
     }
 }
 

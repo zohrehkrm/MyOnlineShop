@@ -13,7 +13,7 @@ $env:IdentitySecurity__SigningKeyBase64 = [Convert]::ToBase64String([System.Secu
 dotnet run --project MyOnlineShop --launch-profile https
 ```
 
-Changing the key invalidates existing access tokens. Keep the configured key stable across instances and restarts. Production SQL credentials continue to use `ConnectionStrings__SqlServer` as described in FOUNDATION.md.
+Changing the key invalidates existing access tokens. Keep the configured key stable across instances and restarts. Starting the API also requires `ConnectionStrings__SqlServer` from secure configuration, as described in FOUNDATION.md. No LocalDB fallback is configured. SQL Server will be provided later through Docker; the database-free tests below can run now without starting the API against a database.
 
 Other `IdentitySecurity` settings: issuer, audience, access lifetime (default 10 minutes, permitted 1–30), absolute session lifetime (default 30 days, permitted 1–30), maximum failed logins (default 5), and lockout duration (default 15 minutes). Configuration is validated at startup.
 
@@ -81,10 +81,10 @@ dotnet ef migrations has-pending-model-changes --project src/Modules/Identity/In
 dotnet test tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj
 ```
 
-Without `IDENTITY_TEST_SQL_SERVER`, tests cover application rules and the actual HTTP authentication/authorization pipeline using an explicit in-memory repository test double. Offline checks inspect the actual SQL Server EF model and generated migration. These do not validate SQL transaction behavior or database constraints at runtime.
+Without `IDENTITY_TEST_SQL_SERVER`, database-dependent tests are reported as skipped. The remaining tests cover application rules and the actual HTTP authentication/authorization pipeline using an explicit in-memory repository test double. Offline checks inspect the actual SQL Server EF model and generated migration without opening a connection. These do not validate SQL transaction behavior or database constraints at runtime.
 
-The separate SQL suite requires an existing SQL Server master connection in `IDENTITY_TEST_SQL_SERVER`, with permission to create a temporary database. Its fixture creates a uniquely named `MyOnlineShop_IdentityTests_<guid>` database, applies only Identity migrations there, and deletes only that database on completion. It never resets or migrates the application database. This suite verifies SQL persistence, audit, constraints and concurrent refresh rotation.
+The separate SQL suite is deferred to Docker SQL Server. When authorized later, it requires a Docker SQL Server master connection in `IDENTITY_TEST_SQL_SERVER`, with permission to create a temporary database inside that container. Its fixture creates a uniquely named `MyOnlineShop_IdentityTests_<guid>` database, applies only Identity migrations there, and deletes only that database on completion. It never resets or migrates the application database. This suite verifies SQL persistence, audit, constraints and concurrent refresh rotation.
 
-The SQL suite was not executed because its LocalDB command was declined. Phase 2 remains pending that verification. No OTP, SMS, RabbitMQ, Redis or later business modules were implemented.
+The user explicitly deferred database integration testing and authorized completing Phase 2 with the affected build and database-free tests. SQL Server/LocalDB is not available on this machine; neither is installed or used by this validation. Database-dependent tests remain skipped, and SQL runtime/concurrency verification is deferred to Docker SQL Server. No persistent database was modified. No OTP, SMS, RabbitMQ, Redis or later business modules were implemented.
 
 References: [ASP.NET Core JWT validation](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/configure-jwt-bearer-authentication?view=aspnetcore-10.0), [ASP.NET Core password hashing configuration](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-configuration?view=aspnetcore-10.0).
