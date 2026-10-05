@@ -1,6 +1,28 @@
 <Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/BuildingBlocks/" />
+  <Folder Name="/src/BuildingBlocks/Abstractions/" />
+  <Folder Name="/src/BuildingBlocks/Infrastructure/" />
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Identity/" />
+  <Folder Name="/src/Modules/Identity/Application/">
+    <Project Path="src/Modules/Identity/Application/MyOnlineShop.Identity.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/Contracts/">
+    <Project Path="src/Modules/Identity/Contracts/MyOnlineShop.Identity.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/Domain/">
+    <Project Path="src/Modules/Identity/Domain/MyOnlineShop.Identity.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/Infrastructure/">
+    <Project Path="src/Modules/Identity/Infrastructure/MyOnlineShop.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/Presentation/">
+    <Project Path="src/Modules/Identity/Presentation/MyOnlineShop.Identity.Presentation.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
+    <Project Path="tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj" />
   </Folder>
   <Project Path="MyOnlineShop/MyOnlineShop.csproj" />
   <Folder Name="/BuildingBlocks/">

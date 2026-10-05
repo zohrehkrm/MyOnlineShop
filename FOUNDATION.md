@@ -6,6 +6,8 @@ The existing `MyOnlineShop` project is the ASP.NET Core API host. `src/BuildingB
 
 Requires the .NET 10 SDK. From the repository root:
 
+After Phase 2, Identity also requires a signing key from secure configuration. See IDENTITY.md before starting the host; no JWT key is checked in.
+
 ```powershell
 dotnet restore MyOnlineShop.slnx
 dotnet run --project MyOnlineShop --launch-profile https

@@ -24,6 +24,8 @@ public sealed class FoundationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting("IdentitySecurity:SigningKeyBase64", Convert.ToBase64String(
+            System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)));
         builder.ConfigureServices(services =>
             services.AddControllers().AddApplicationPart(typeof(FoundationProbeController).Assembly));
     }
