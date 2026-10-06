@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 7 — Order & Checkout
+Phase 9 — Wallet
 
 ## Status
 
-Complete under the user-approved database-free validation scope — 2026-10-05
+Complete under the user-approved database-free validation scope — 2026-10-06
 
 ## Completed
 
@@ -96,6 +96,16 @@ Complete under the user-approved database-free validation scope — 2026-10-05
 * InitialOrder and incremental AddOrderPermissions migrations reviewed offline
 * Phase 7 affected build and available tests passed; five Order SQL tests implemented and skipped
 * Order/Checkout flow, API, transaction boundaries and state rules documented in ORDER.md
+* Wallet Domain, Contracts, Application, Infrastructure and Presentation projects
+* One primary wallet per user, immutable currency, bounded nonnegative decimal balance and signed immutable ledger
+* Trusted credit/debit contracts, read-only owner wallet/ledger queries and permission-protected administrative charging
+* Atomic conditional SQL balance UPDATE + ledger insertion, per-owner transaction application lock and rollback boundaries
+* Persisted idempotency keys/fingerprints, original-result replay and unique business references
+* Ledger audit includes before/after balances, actor, reference, UTC timestamp and correlation; no sensitive payload logging added
+* Wallet-owned SQL Server context/schema/history, financial constraints, indexes, rowversion and immutable-history SQL trigger
+* InitialWallet and incremental AddWalletPermission migrations and forward SQL scripts generated/reviewed offline
+* Phase 9 affected build and available Wallet/Identity/Foundation validation passed; SQL-dependent tests implemented and skipped
+* Wallet financial rules, API, trusted boundaries, migration safety and deferred SQL validation documented in WALLET.md
 
 ## Current Objective
 
@@ -105,7 +115,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 7 is complete under available validation; SQL Server integration/concurrency verification is deferred to a future authorized environment.
+None. Phase 9 is complete under available validation; SQL Server integration/concurrency verification is deferred to a future authorized environment. Phase 8 remains unimplemented; Phase 10 was not started.
 
 ## Completed Phases
 
@@ -118,7 +128,7 @@ None. Phase 7 is complete under available validation; SQL Server integration/con
 * [x] Phase 6 — Pricing & Discount
 * [x] Phase 7 — Order & Checkout
 * [ ] Phase 8 — Payment
-* [ ] Phase 9 — Wallet
+* [x] Phase 9 — Wallet
 * [ ] Phase 10 — Outbox & RabbitMQ
 * [ ] Phase 11 — Refund Processing
 * [ ] Phase 12 — Shipping
@@ -130,6 +140,9 @@ None. Phase 7 is complete under available validation; SQL Server integration/con
 
 ## Known Issues
 
+* Wallet SQL transaction rollback, native conditional update behavior, application locking, concurrent debit/replay handling, relational constraints and immutable-ledger trigger remain unverified at runtime without SQL Server. Six implemented Wallet SQL tests are explicitly skipped, including the mandatory 1,000,000 balance/two 700,000 debits scenario.
+* Payment is absent from the repository and Phase 8 is not complete. Wallet exposes trusted future credit/debit integration contracts only; no payment-from-wallet or refund workflow was added.
+* Wallet owns its local transaction. Future cross-module financial workflows must define authorization, stable operation/reference IDs and their consistency protocol; no distributed transaction, outbox or messaging was added.
 * Order SQL runtime persistence, shared Order/Cart transaction rollback, concurrent idempotency, uniqueness and rowversion remain unverified without SQL Server. Five implemented Order SQL tests are explicitly skipped.
 * Order/Cart atomic enlistment assumes the current shared physical SQL Server database and scoped contexts. Separate-service extraction will need a durable consumption/reconciliation protocol; it was not implemented now.
 * Checkout checks physical availability across active warehouses without allocating a fulfilment warehouse, reserving or deducting stock. It does not guarantee availability when payment is verified later.
@@ -143,6 +156,23 @@ None. Phase 7 is complete under available validation; SQL Server integration/con
 * Catalog SQL query execution, relational constraints, transaction rollback, rowversion concurrency and hierarchy application locks remain unverified against a live SQL Server. These database-dependent checks were skipped/deferred to Docker SQL Server.
 * SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime. The user explicitly deferred these integration tests to Docker SQL Server; this does not block Phase 2 completion under the revised scope.
 * SQL Server/LocalDB is not available on this machine. No SQL Server or LocalDB installation/use or persistent database modification is authorized for current validation.
+
+## Phase 9 Verification
+
+* Final affected Wallet test/API/module project build succeeded with 0 warnings and 0 errors. The affected API build also passed.
+* Wallet tests: 20 passed, 0 failed, 6 SQL-backed tests skipped. WALLET_TEST_SQL_SERVER was cleared only for the test process.
+* Focused Identity HTTP regressions: 8 passed, 0 failed. Foundation regressions: 15 passed, 0 failed, 1 SQL connectivity test skipped. Relevant SQL environment variables were cleared only for these processes. Total available validation: 43 passed, 0 failed, 7 skipped.
+* Available Wallet tests cover valid-user creation, one primary wallet through commands, positive/precision/currency/balance rules, credits/debits and exact-zero balance, insufficient funds, required key/reference/description/actor validation, historical before/after values and signed immutable ledger.
+* Persisted replay tests cover credit/debit, replay after later postings, altered amount/actor/direction, duplicate business references, equivalent decimal scale/currency/description normalization and retry after a failed debit without consuming its key.
+* API tests verify anonymous/unauthorized administrative credit rejection, owner-only reads/ledger, ignored client financial/identity fields, server actor/status/direction/balances, no public credit/debit endpoints, DTO/envelope/correlation behavior and safe validation/not-found responses.
+* EF history guards reject historical ledger edits/deletes, unpaired balance changes and orphan postings. Offline SQL model/migration checks verify decimal(18,4), unique user/key/reference indexes, rowversion, restrictive relationships, nonnegative/amount/sign/balance constraints and immutable-history trigger. Wallet and Identity have no pending model changes.
+* SQL-backed tests compile and implement simultaneous two 700,000 debits from 1,000,000 with exactly one success and balance 300,000; concurrent initial credit and duplicate credit/debit replay; rollback after the balance UPDATE; rollback after both balance/ledger flushes; SQL unique constraints; and raw SQL ledger UPDATE/DELETE and wallet deletion protection. These tests did not access a database.
+* Unit/API tests use explicit EF InMemory balance-command/unit-of-work substitutes and fake Identity/authenticated claims. They do not prove SQL atomicity or concurrency. Offline model/projection checks block all database connections; existing Identity HTTP regressions exercise actual JWT and current authorization behavior separately.
+* InitialWallet adds only Wallet schema objects and rejects destructive downgrade of financial history. AddWalletPermission adds only wallet.credit and its Administrator grant; prior migrations were preserved.
+* Idempotent forward scripts generated/reviewed: artifacts/wallet-migration.sql and artifacts/wallet-permission-migration.sql. No destructive forward financial-history operations were found.
+* Production financial code uses decimal, native SQL parameters and module-owned persistence. No sensitive request bodies, credentials/tokens or financial descriptions are logged by Wallet; Foundation safe exception metadata/correlation logging is reused.
+* No migration was applied, no live/persistent database was accessed or modified, and no database was created/reset. SQL Server/LocalDB/Docker was not installed or used.
+* No Payment, refund, wallet payment, inventory change, checkout redesign, Redis, RabbitMQ, outbox or Phase 10 functionality was implemented.
 
 ## Phase 7 Verification
 
@@ -339,9 +369,16 @@ Payment operations must be idempotent.
 
 ### Wallet
 
-Wallet uses a ledger.
-
-Refunds are idempotent.
+* Wallet owns wallet schema/context/history and has one primary wallet per user. First successful credit creates it; reads create nothing and return 404 beforehand. First credit fixes the wallet currency.
+* Signed ledger convention: credit positive, debit negative, Posted for successful entries only. Failed debits post nothing. Before/after balances, signed amount, references, actor, timestamp and correlation retain immutable financial history.
+* Money reuses Pricing.Contracts currency/precision rules and the 1,000,000,000,000 bound. SQL monetary fields use decimal(18,4); input precision is validated, balances never negative and currency conversion is deferred.
+* Each posting uses a transaction-owned per-user SQL application lock, a conditional SQL balance UPDATE with actual OUTPUT before/after values, and one matching ledger insertion in the same transaction. Failure rolls back creation/balance/ledger together.
+* Idempotency is persisted with a unique wallet/key and normalized structured fingerprint including canonical decimal amount, actor, direction and reference. Exact replays return the original result; changed payload/actor fails 409. Wallet/type/reference uniqueness additionally prevents reposting a business reference with a new key.
+* EF posting guards protect financial consistency and immutable history; SQL trigger rejects historical ledger UPDATE/DELETE and restrictive relationships prevent removing referenced wallets. InitialWallet Down refuses destructive financial-history removal.
+* wallet.credit reuses Identity permission policies and an incremental Administrator grant. Administrative target users are validated through the existing Identity query contract; actor/owner authority comes from authenticated claims.
+* Credit/debit remain trusted application contracts for later authorized workflows. No customer charging/debit endpoint, payment-from-wallet or refund processing is implemented; Phase 8 remains incomplete.
+* Wallet commits its own module-local transaction. Cross-module financial orchestration, outbox/messaging and reconciliation belong to later explicitly requested work. Redis is not used for balance or idempotency.
+* Phase 9 completion uses successful available validation as requested. Six SQL integration tests remain deferred; actual SQL concurrency/transaction/constraint behavior has not been verified against a live server.
 
 ### Refund
 
@@ -359,4 +396,4 @@ Redis is not the source of truth for financial or inventory data.
 
 ## Next Phase
 
-Phase 8 — Payment (not started; requires a new user request). Database integration/concurrency verification remains deferred to a future authorized SQL Server environment.
+Phase 10 — Outbox & RabbitMQ (not started; requires a new user request). Phase 8 — Payment also remains unimplemented and was not marked complete. Database integration/concurrency verification remains deferred to a future explicitly authorized SQL Server environment.

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Domain/MyOnlineShop.Wallet.Domain.csproj" />
+    <ProjectReference Include="../Contracts/MyOnlineShop.Wallet.Contracts.csproj" />
+    <ProjectReference Include="../../Identity/Contracts/MyOnlineShop.Identity.Contracts.csproj" />
+    <ProjectReference Include="../../Pricing/Contracts/MyOnlineShop.Pricing.Contracts.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/Abstractions/MyOnlineShop.BuildingBlocks.Abstractions.csproj" />
+
+  </ItemGroup>
+</Project>
