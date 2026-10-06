@@ -2,14 +2,20 @@
 
 ## Current Phase
 
-Phase 12 — Shipping
+Phase 13 — Redis & Caching
 
 ## Status
 
-Complete under infrastructure-free validation; live SQL and verified-payment fulfillment integration remain deferred — 2026-10-06
+Complete under infrastructure-free validation; live Redis and SQL cache-invalidation runtime checks remain deferred — 2026-10-06
 
 ## Completed
 
+* Optional Redis infrastructure, shared ICacheService, validated configuration/DI, versioned DTO serialization and bounded failure fallback
+* Catalog product/category/brand details, Pricing/Discount record lookups and active Shipping method DTO caches
+* Post-commit module generation invalidation, absolute TTL, payload limits and bounded process-local stampede protection
+* Checkout pricing, eligibility, Catalog purchasability, Inventory availability and final Shipping quotes remain database-authoritative
+* Phase 13 affected build passed with zero warnings/errors; all available database-free tests passed after focused fixture correction
+* Redis integration test compiled and explicitly skipped; configuration and limitations documented in CACHING.md
 * Project requirements defined
 * Modular Monolith selected
 * Onion Architecture selected
@@ -149,7 +155,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 12 is complete under available infrastructure-free validation. SQL runtime/concurrency verification and true Payment -> paid Order -> Shipment integration remain deferred. Phase 8 remains absent and Phase 11 production refunds remain blocked by missing payment evidence. Phase 13 was not started.
+None. Phase 13 is complete under available infrastructure-free validation. Live Redis and SQL invalidation runtime checks remain deferred. Phase 8 remains absent; Phase 11 production refunds and true verified-payment fulfillment remain blocked by missing payment evidence. Phase 14 was not started.
 
 ## Completed Phases
 
@@ -166,7 +172,7 @@ None. Phase 12 is complete under available infrastructure-free validation. SQL r
 * [x] Phase 10 — Outbox & RabbitMQ
 * [x] Phase 11 — Refund Processing (foundation; Phase 8 production integration blocked)
 * [x] Phase 12 — Shipping
-* [ ] Phase 13 — Redis
+* [x] Phase 13 — Redis & Caching
 * [ ] Phase 14 — Reporting
 * [ ] Phase 15 — Admin & Warehouse APIs
 * [ ] Phase 16 — Testing & Hardening
@@ -174,6 +180,8 @@ None. Phase 12 is complete under available infrastructure-free validation. SQL r
 
 ## Known Issues
 
+* Live Redis round-trip/expiry/removal is implemented but skipped without REDIS_TEST_CONNECTION_STRING. SQL post-commit invalidation is reviewed and its success/failure control flow is tested using explicit EF InMemory; actual SQL transaction/runtime verification remains deferred.
+* Cache invalidation is best effort after SQL commit. Redis outage, process termination between commit/invalidation or direct SQL edits can leave cached display/management DTOs stale until absolute TTL (default two minutes, configured maximum ten). Financial calculations and critical eligibility reads bypass these caches.
 * Shipping SQL persistence, native rowversion conflicts, concurrent creation/transition, uniqueness and flushed audit rollback remain unverified against live SQL Server. Five implemented Shipping SQL tests are explicitly skipped.
 * True verified Payment -> paid Order -> Shipment E2E is blocked/skipped by missing Phase 8. Shipment creation requires a paid/Processing physical Order; tests use explicit trusted Order domain fixtures, not a fake Payment implementation. Payment was not added or bypassed.
 * Legacy/unselected Orders retain original totals and ShippingCost=0, but lack the full captured shipping selection/address required by new Shipment creation. A future authorized fulfillment/backfill policy is needed; no historical purchase/address/cost data was fabricated. Physical checkout must provide Shipping to use the new fulfillment flow.
@@ -504,10 +512,19 @@ Important integration events use Transactional Outbox before RabbitMQ publicatio
 * Customer shipment reads validate Order ownership; management/view/method policies require explicit Identity permissions, never role-name bypass. Shipping audit commits with state and structured logs omit personal/payment data.
 * No automatic Order status mutation or unnecessary RabbitMQ event/consumer is introduced. SQL concurrency/runtime and true verified-payment fulfillment remain deferred; Phase 8 is not implemented here.
 
-### Redis
+### Redis & Caching
 
-Redis is not the source of truth for financial or inventory data.
+* Phase 13 complete on 2026-10-06 under database-free validation. Redis remains an optional DTO cache; SQL Server remains authoritative.
+* Shared ICacheService provides get/set/remove with absolute expiry. Microsoft.Extensions.Caching.StackExchangeRedis 10.0.0 follows existing .NET package baseline. Redis settings/environment secrets are validated; disabled by default, lazy connection, bounded timeout, fail-fast backlog and short failure cooldown. No credentials, keys or values are logged.
+* Cache-aside covers Catalog product details (including variants/specifications/images/metadata), category/brand details, Pricing individual price records, Discount individual rules and active Shipping methods by normalized currency. Public/management Catalog keys are separate. Existing authorization remains enforced; no user-specific/authentication/private shipment or financial-state caches were added.
+* Versioned module/resource keys use a module generation token. Successful Catalog/Pricing/Discount transactions and Shipping method edits invalidate only that module after commit. Failed commands do not invalidate. Old entries/in-flight fills expire in unreachable generations; no scans or global clearing. Two-minute default data TTL, 24-hour generation TTL and 256 KiB payload bound; generation expiry exceeds maximum data TTL.
+* Current-price single/batch queries, discount candidates, checkout calculations, Catalog variant references, Inventory and final Shipping quotes remain uncached. Identity, Cart, Order, Payment, Wallet and Refund business flows were not changed. No schema migration, external service installation, connection or persistent database change was performed.
+* Lightweight 64-stripe local semaphore protection coalesces concurrent misses per process. No distributed locks or generic cache-management endpoints were added. Invalidation outage/crash staleness is bounded by absolute TTL and documented in CACHING.md.
+* Initial and final affected API builds succeeded with zero warnings/errors. All existing suites passed. One new Catalog cache fixture initially violated existing restricted deletes; corrected to updates/deactivation and reran the entire cache suite successfully. No unrelated production refactoring was needed.
+* Final unique available-suite outcome: 240 passed, 0 failed, 65 skipped. Caching: 19 passed / 1 Redis skipped; Cart: 13/5; Catalog: 27/0; Foundation: 15/1; Identity: 23/13; Inventory: 15/8; Messaging: 10/9; Order: 25/5; PricingDiscount: 35/5; Refund: 20/6; Shipping: 18/6; Wallet: 20/6. Existing all-suite run plus the corrected focused Caching rerun establish these final counts without rerunning unchanged passing suites.
+* Skips: 60 SQL-dependent tests, 1 RabbitMQ test, 1 Redis integration test, 3 true Payment E2E tests blocked by missing Phase 8. Infrastructure connection variables were cleared before the full suite. Tests compiled; no SQL Server, LocalDB, RabbitMQ, Redis or Docker was installed, started or contacted.
+* Cache tests verify keys, serialization/DTOs, hit/miss, absolute expiry, invalidation isolation, stale in-flight fills, local stampede protection, unavailable Redis fallback/cooldown/recovery, bounded timeout, cancellation, malformed/oversized payloads, disabled startup, Catalog visibility and production commit-hook success/failure control flow. Module tests prove fresh price/discount eligibility/shipping calculations despite stale display DTOs. EF InMemory tests do not claim SQL transaction correctness.
 
 ## Next Phase
 
-Phase 13 — Redis (not started; requires a new user request). Phase 8 Payment remains unimplemented; its producer, paid Order integration and authoritative refund evidence/eligibility remain pending. Payment was not absorbed into Phase 12 or marked complete. SQL Server/RabbitMQ runtime and true Payment end-to-end validation remain deferred.
+Phase 14 — Reporting (not started; requires a new user request). Phase 8 Payment remains unimplemented; its producer, paid Order integration and authoritative refund evidence remain pending. Live Redis, SQL Server/RabbitMQ runtime and true Payment E2E validation remain deferred. Phase 13 did not implement any later phase.

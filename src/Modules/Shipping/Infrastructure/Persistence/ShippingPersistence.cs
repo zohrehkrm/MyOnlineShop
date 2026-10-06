@@ -1,3 +1,4 @@
+using MyOnlineShop.BuildingBlocks.Infrastructure.Caching;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyOnlineShop.Order.Contracts;
@@ -18,17 +19,19 @@ public sealed class ShippingStore(ShippingDbContext db) : IShippingStore
     public void Add(Shipment shipment) => db.Shipments.Add(shipment);
     public void Audit(ShippingAudit audit) => db.Audit.Add(audit);
 }
-public sealed class ShippingUnitOfWork(ShippingDbContext db) : IShippingUnitOfWork
+public sealed class ShippingUnitOfWork(ShippingDbContext db, ReadCache? cache = null) : IShippingUnitOfWork
 {
     public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct)
     {
         try
         {
-            return await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            var committed = await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
                 db.ChangeTracker.Clear(); await using var transaction = await db.Database.BeginTransactionAsync(ct);
                 var result = await action(ct); await db.SaveChangesAsync(ct); await transaction.CommitAsync(ct); return result;
             });
+            if (cache is not null && committed is ShippingMethodDto) await cache.InvalidateAsync("shipping");
+            return committed;
         }
         catch (ShippingRuleException error) { throw ShippingException.Invalid(error.Message); }
         catch (MoneyRuleException error) { throw ShippingException.Invalid(error.Message); }
@@ -36,9 +39,14 @@ public sealed class ShippingUnitOfWork(ShippingDbContext db) : IShippingUnitOfWo
         catch (DbUpdateException error) when (error.InnerException is SqlException { Number: 2601 or 2627 }) { throw ShippingException.Conflict(); }
     }
 }
-public sealed class ShippingQueries(ShippingDbContext db, IOrderShippingSnapshots orders) : IShippingQueries
+public sealed class ShippingQueries(ShippingDbContext db, IOrderShippingSnapshots orders, ReadCache? cache = null) : IShippingQueries
 {
-    public async Task<IReadOnlyList<ShippingMethodDto>> AvailableMethodsAsync(string currency, CancellationToken ct)
+    public Task<IReadOnlyList<ShippingMethodDto>> AvailableMethodsAsync(string currency, CancellationToken ct)
+    {
+        try { currency = MoneyRules.Currency(currency); } catch (MoneyRuleException error) { throw ShippingException.Invalid(error.Message); }
+        return cache is null ? AvailableAsync(currency, ct) : cache.GetAsync("shipping", $"methods:{currency}:active", token => AvailableAsync(currency, token), ct);
+    }
+    private async Task<IReadOnlyList<ShippingMethodDto>> AvailableAsync(string currency, CancellationToken ct)
     {
         try { currency = MoneyRules.Currency(currency); } catch (MoneyRuleException error) { throw ShippingException.Invalid(error.Message); }
         return await db.Methods.AsNoTracking().Where(value => value.IsActive && value.Currency == currency).OrderBy(value => value.Code)

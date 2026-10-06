@@ -1,3 +1,4 @@
+using MyOnlineShop.BuildingBlocks.Infrastructure.Caching;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyOnlineShop.Pricing.Application;
@@ -22,17 +23,19 @@ public sealed class PriceStore(PricingDbContext context) : IPriceStore
     public void Add(VariantPrice price) => context.Prices.Add(price);
     public void AddHistory(PriceHistory history) => context.History.Add(history);
 }
-public sealed class PriceUnitOfWork(PricingDbContext context) : IPriceUnitOfWork
+public sealed class PriceUnitOfWork(PricingDbContext context, ReadCache? cache = null) : IPriceUnitOfWork
 {
     public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct)
     {
         try
         {
-            return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            var committed = await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
                 context.ChangeTracker.Clear(); await using var transaction = await context.Database.BeginTransactionAsync(ct);
                 var result = await action(ct); await context.SaveChangesAsync(ct); await transaction.CommitAsync(ct); return result;
             });
+            if (cache is not null) await cache.InvalidateAsync("pricing");
+            return committed;
         }
         catch (PriceRuleException error) { throw PricingException.Invalid(error.Message); }
         catch (MoneyRuleException error) { throw PricingException.Invalid(error.Message); }
@@ -50,8 +53,10 @@ public sealed class PriceUnitOfWork(PricingDbContext context) : IPriceUnitOfWork
             """, ct);
     }
 }
-public sealed class PriceReadStore(PricingDbContext context) : IPriceReadStore
+public sealed class PriceReadStore(PricingDbContext context, ReadCache? cache = null) : IPriceReadStore
 {
+    public Task<PriceDto> GetAsync(Guid id, CancellationToken ct) => cache is null ? DetailAsync(id, ct)
+        : cache.GetAsync("pricing", MyOnlineShop.BuildingBlocks.Abstractions.CacheKeys.Detail("price", id, true), token => DetailAsync(id, token), ct);
     private static System.Linq.Expressions.Expression<Func<VariantPrice, PriceDto>> Projection => value =>
         new(value.Id, value.ProductVariantId, value.BasePrice, value.ComparePrice, value.Currency, value.IsActive, value.EffectiveFromUtc, value.EffectiveToUtc);
     public Task<PriceDto?> GetCurrentAsync(Guid variantId, string currency, DateTimeOffset atUtc, CancellationToken ct) =>
@@ -60,7 +65,7 @@ public sealed class PriceReadStore(PricingDbContext context) : IPriceReadStore
     public async Task<IReadOnlyList<PriceDto>> GetCurrentManyAsync(IReadOnlyList<Guid> ids, string currency, DateTimeOffset atUtc, CancellationToken ct) =>
         await context.Prices.AsNoTracking().Where(value => ids.Contains(value.ProductVariantId) && value.Currency == currency && value.IsActive &&
             value.EffectiveFromUtc <= atUtc && (value.EffectiveToUtc == null || value.EffectiveToUtc > atUtc)).OrderBy(value => value.ProductVariantId).Select(Projection).ToListAsync(ct);
-    public async Task<PriceDto> GetAsync(Guid id, CancellationToken ct) => await context.Prices.AsNoTracking().Where(value => value.Id == id)
+    private async Task<PriceDto> DetailAsync(Guid id, CancellationToken ct) => await context.Prices.AsNoTracking().Where(value => value.Id == id)
         .Select(Projection).SingleOrDefaultAsync(ct) ?? throw PricingException.NotFound();
     public async Task<IReadOnlyList<PriceHistoryDto>> GetHistoryAsync(Guid variantId, string currency, int page, int size, CancellationToken ct) =>
         await context.History.AsNoTracking().Where(value => value.ProductVariantId == variantId && value.Currency == currency)

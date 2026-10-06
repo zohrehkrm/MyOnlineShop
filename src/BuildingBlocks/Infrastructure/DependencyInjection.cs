@@ -36,6 +36,7 @@ public static class DependencyInjection
             });
         });
         services.AddMessagingPersistence(configuration);
+        MyOnlineShop.BuildingBlocks.Infrastructure.Caching.CachingDependencyInjection.AddReadCaching(services, configuration);
         return services;
     }
 }

@@ -1,3 +1,4 @@
+using MyOnlineShop.BuildingBlocks.Infrastructure.Caching;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using MyOnlineShop.Catalog.Application;
@@ -5,13 +6,13 @@ using MyOnlineShop.Catalog.Domain;
 
 namespace MyOnlineShop.Catalog.Infrastructure.Persistence;
 
-internal sealed class CatalogUnitOfWork(CatalogDbContext context) : ICatalogUnitOfWork
+internal sealed class CatalogUnitOfWork(CatalogDbContext context, ReadCache? cache = null) : ICatalogUnitOfWork
 {
     public async Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken ct)
     {
         try
         {
-            return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            var committed = await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
                 context.ChangeTracker.Clear();
                 await using var transaction = await context.Database.BeginTransactionAsync(ct);
@@ -20,6 +21,8 @@ internal sealed class CatalogUnitOfWork(CatalogDbContext context) : ICatalogUnit
                 await transaction.CommitAsync(ct);
                 return result;
             });
+            if (cache is not null) await cache.InvalidateAsync("catalog");
+            return committed;
         }
         catch (CatalogRuleException error) { throw CatalogException.Invalid(error.Message); }
         catch (SqlException error) when (error.Number == 50002)

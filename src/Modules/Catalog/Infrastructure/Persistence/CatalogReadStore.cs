@@ -2,11 +2,19 @@ using Microsoft.EntityFrameworkCore;
 using MyOnlineShop.Catalog.Application;
 using MyOnlineShop.Catalog.Contracts;
 using MyOnlineShop.Catalog.Domain;
+using MyOnlineShop.BuildingBlocks.Abstractions;
+using MyOnlineShop.BuildingBlocks.Infrastructure.Caching;
 
 namespace MyOnlineShop.Catalog.Infrastructure.Persistence;
 
-internal sealed class CatalogReadStore(CatalogDbContext context) : ICatalogReadStore
+internal sealed class CatalogReadStore(CatalogDbContext context, ReadCache? cache = null) : ICatalogReadStore
 {
+    public Task<CategoryDto> GetCategoryAsync(Guid id, bool management, CancellationToken ct) => cache is null
+        ? CategoryAsync(id, management, ct) : cache.GetAsync("catalog", CacheKeys.Detail("category", id, management), token => CategoryAsync(id, management, token), ct);
+    public Task<BrandDto> GetBrandAsync(Guid id, bool management, CancellationToken ct) => cache is null
+        ? BrandAsync(id, management, ct) : cache.GetAsync("catalog", CacheKeys.Detail("brand", id, management), token => BrandAsync(id, management, token), ct);
+    public Task<ProductDto> GetProductAsync(Guid id, bool management, CancellationToken ct) => cache is null
+        ? ProductAsync(id, management, ct) : cache.GetAsync("catalog", CacheKeys.Detail("product", id, management), token => ProductAsync(id, management, token), ct);
     private IQueryable<Product> VisibleProducts(bool management)
     {
         var products = context.Products.AsNoTracking();
@@ -19,11 +27,11 @@ internal sealed class CatalogReadStore(CatalogDbContext context) : ICatalogReadS
                 context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive))));
     }
 
-    public async Task<CategoryDto> GetCategoryAsync(Guid id, bool management, CancellationToken ct) =>
+    private async Task<CategoryDto> CategoryAsync(Guid id, bool management, CancellationToken ct) =>
         await context.Categories.AsNoTracking().Where(value => value.Id == id && (management || value.IsActive))
             .Select(value => new CategoryDto(value.Id, value.Name, value.Code, value.ParentId, value.IsActive)).SingleOrDefaultAsync(ct)
         ?? throw CatalogException.NotFound();
-    public async Task<BrandDto> GetBrandAsync(Guid id, bool management, CancellationToken ct) =>
+    private async Task<BrandDto> BrandAsync(Guid id, bool management, CancellationToken ct) =>
         await context.Brands.AsNoTracking().Where(value => value.Id == id && (management || value.IsActive))
             .Select(value => new BrandDto(value.Id, value.Name, value.Code, value.IsActive)).SingleOrDefaultAsync(ct)
         ?? throw CatalogException.NotFound();
@@ -34,7 +42,7 @@ internal sealed class CatalogReadStore(CatalogDbContext context) : ICatalogReadS
                     .Select(item => new AttributeValueDto(item.Id, item.Label, item.Code, item.IsActive)).ToList()))
             .SingleOrDefaultAsync(ct) ?? throw CatalogException.NotFound();
 
-    public async Task<ProductDto> GetProductAsync(Guid id, bool management, CancellationToken ct)
+    private async Task<ProductDto> ProductAsync(Guid id, bool management, CancellationToken ct)
     {
         var product = await VisibleProducts(management).Where(value => value.Id == id)
             .Include(value => value.AttributeOptions).Include(value => value.Images).Include(value => value.Specifications)
