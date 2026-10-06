@@ -84,6 +84,22 @@
   <Folder Name="/src/Modules/Inventory/Presentation/">
     <Project Path="src/Modules/Inventory/Presentation/MyOnlineShop.Inventory.Presentation.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Order/" />
+  <Folder Name="/src/Modules/Order/Application/">
+    <Project Path="src/Modules/Order/Application/MyOnlineShop.Order.Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Order/Contracts/">
+    <Project Path="src/Modules/Order/Contracts/MyOnlineShop.Order.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Order/Domain/">
+    <Project Path="src/Modules/Order/Domain/MyOnlineShop.Order.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Order/Infrastructure/">
+    <Project Path="src/Modules/Order/Infrastructure/MyOnlineShop.Order.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Order/Presentation/">
+    <Project Path="src/Modules/Order/Presentation/MyOnlineShop.Order.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Pricing/" />
   <Folder Name="/src/Modules/Pricing/Application/">
     <Project Path="src/Modules/Pricing/Application/MyOnlineShop.Pricing.Application.csproj" />
@@ -106,6 +122,7 @@
     <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Inventory.Tests/MyOnlineShop.Inventory.Tests.csproj" />
+    <Project Path="tests/MyOnlineShop.Order.Tests/MyOnlineShop.Order.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.PricingDiscount.Tests/MyOnlineShop.PricingDiscount.Tests.csproj" />
   </Folder>
   <Project Path="MyOnlineShop/MyOnlineShop.csproj" />

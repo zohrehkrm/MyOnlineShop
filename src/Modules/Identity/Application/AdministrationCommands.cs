@@ -40,7 +40,7 @@ public sealed class AdministrationCommands(IIdentityStore store, IIdentityPasswo
     {
         if (permission is not (IdentityPermissions.ManageUsers or IdentityPermissions.ManageRoles or IdentityPermissions.ManageCatalog or
             IdentityPermissions.ViewInventory or IdentityPermissions.ReceiveInventory or IdentityPermissions.AdjustInventory or IdentityPermissions.DeductInventory or
-            IdentityPermissions.ManagePricing or IdentityPermissions.ManageDiscount))
+            IdentityPermissions.ManagePricing or IdentityPermissions.ManageDiscount or IdentityPermissions.ViewOrders or IdentityPermissions.ManageOrders))
             throw new IdentityException("validation_error", 400, "Permission is not part of the supported permission catalog.");
         await store.InTransactionAsync(async ct =>
         {

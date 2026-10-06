@@ -1,7 +1,7 @@
 namespace MyOnlineShop.Catalog.Contracts;
 
 public sealed record CatalogVariantReference(Guid Id, string Sku, string ProductKind, bool IsActive,
-    Guid? ProductId = null, Guid? CategoryId = null);
+    Guid? ProductId = null, Guid? CategoryId = null, string? ProductName = null);
 public interface ICatalogVariantReferences
 {
     Task<CatalogVariantReference?> GetAsync(Guid variantId, CancellationToken cancellationToken);

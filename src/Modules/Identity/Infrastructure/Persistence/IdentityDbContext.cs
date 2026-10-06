@@ -26,7 +26,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             new { Key = IdentityPermissions.ManageUsers }, new { Key = IdentityPermissions.ManageRoles },
             new { Key = IdentityPermissions.ManageCatalog }, new { Key = IdentityPermissions.ViewInventory },
             new { Key = IdentityPermissions.ReceiveInventory }, new { Key = IdentityPermissions.AdjustInventory },
-            new { Key = IdentityPermissions.DeductInventory }, new { Key = IdentityPermissions.ManagePricing }, new { Key = IdentityPermissions.ManageDiscount });
+            new { Key = IdentityPermissions.DeductInventory }, new { Key = IdentityPermissions.ManagePricing }, new { Key = IdentityPermissions.ManageDiscount },
+            new { Key = IdentityPermissions.ViewOrders }, new { Key = IdentityPermissions.ManageOrders });
         modelBuilder.Entity<RolePermission>().HasData(
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageUsers },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageRoles },
@@ -36,7 +37,9 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.AdjustInventory },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.DeductInventory },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManagePricing },
-            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageDiscount });
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageDiscount },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ViewOrders },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageOrders });
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

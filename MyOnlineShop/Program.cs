@@ -7,6 +7,7 @@ using MyOnlineShop.Inventory.Presentation;
 using MyOnlineShop.Cart.Presentation;
 using MyOnlineShop.Pricing.Presentation;
 using MyOnlineShop.Discount.Presentation;
+using MyOnlineShop.Order.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -24,6 +25,7 @@ builder.Services.AddInventoryModule(builder.Configuration);
 builder.Services.AddCartModule(builder.Configuration);
 builder.Services.AddPricingModule(builder.Configuration);
 builder.Services.AddDiscountModule(builder.Configuration);
+builder.Services.AddOrderModule(builder.Configuration);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

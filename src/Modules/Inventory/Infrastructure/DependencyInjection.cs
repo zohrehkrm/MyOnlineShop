@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryStore, InventoryStore>();
         services.AddScoped<IInventoryReadStore, InventoryReadStore>();
         services.AddScoped<IInventoryQueries, InventoryQueries>();
+        services.AddScoped<IInventoryAvailability, InventoryAvailability>();
         services.AddScoped<WarehouseCommands>(); services.AddScoped<StockCommands>(); services.AddScoped<InventoryCommands>();
         services.AddScoped<IInventoryCommands>(provider => provider.GetRequiredService<InventoryCommands>());
         services.AddScoped<IInventoryDeduction>(provider => provider.GetRequiredService<InventoryCommands>());

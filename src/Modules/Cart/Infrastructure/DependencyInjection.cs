@@ -30,6 +30,9 @@ public static class DependencyInjection
         services.AddScoped<AddCartItemHandler>(); services.AddScoped<UpdateCartItemQuantityHandler>();
         services.AddScoped<RemoveCartItemHandler>(); services.AddScoped<ClearCartHandler>();
         services.AddScoped<ICartCommands, CartCommands>();
+        services.AddScoped<CheckoutCart>();
+        services.AddScoped<ICheckoutCart>(provider => provider.GetRequiredService<CheckoutCart>());
+        services.AddScoped<ILocalSqlTransactionParticipant>(provider => provider.GetRequiredService<CheckoutCart>());
         return services;
     }
 }

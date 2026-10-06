@@ -22,6 +22,7 @@
     <ProjectReference Include="../src/Modules/Cart/Presentation/MyOnlineShop.Cart.Presentation.csproj" />
     <ProjectReference Include="../src/Modules/Pricing/Presentation/MyOnlineShop.Pricing.Presentation.csproj" />
     <ProjectReference Include="../src/Modules/Discount/Presentation/MyOnlineShop.Discount.Presentation.csproj" />
+    <ProjectReference Include="../src/Modules/Order/Presentation/MyOnlineShop.Order.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

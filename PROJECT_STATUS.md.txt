@@ -2,7 +2,7 @@
 
 ## Current Phase
 
-Phase 6 — Pricing & Discount
+Phase 7 — Order & Checkout
 
 ## Status
 
@@ -87,6 +87,15 @@ Complete under the user-approved database-free validation scope — 2026-10-05
 * InitialPricing, InitialDiscount and incremental AddPricingDiscountPermissions migrations reviewed offline
 * Phase 6 build and all available tests passed; SQL runtime verification remains deferred
 * Pricing/Discount API, boundaries, calculation and persistence decisions documented in PRICING_DISCOUNT.md
+* Order Domain, Contracts, Application, Infrastructure and Presentation projects
+* Historical OrderItem, optional address and pricing/discount/total snapshots independent of current Catalog/Pricing data
+* Explicit order lifecycle, owner-only reads/cancellation and permission-protected management/status APIs
+* Server checkout reuses Cart, Catalog, centralized Pricing/Discount and read-only Inventory availability contracts
+* Persistent owner-scoped checkout idempotency, normalized request fingerprints and unique consumed Cart revisions
+* Same-connection Order/Cart transaction enlistment, conditional Cart clearing and transactional Order audit
+* InitialOrder and incremental AddOrderPermissions migrations reviewed offline
+* Phase 7 affected build and available tests passed; five Order SQL tests implemented and skipped
+* Order/Checkout flow, API, transaction boundaries and state rules documented in ORDER.md
 
 ## Current Objective
 
@@ -96,7 +105,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 6 is complete under available validation; SQL Server integration/concurrency verification is deferred to a future authorized environment.
+None. Phase 7 is complete under available validation; SQL Server integration/concurrency verification is deferred to a future authorized environment.
 
 ## Completed Phases
 
@@ -107,7 +116,7 @@ None. Phase 6 is complete under available validation; SQL Server integration/con
 * [x] Phase 4 — Inventory
 * [x] Phase 5 — Cart
 * [x] Phase 6 — Pricing & Discount
-* [ ] Phase 7 — Order & Checkout
+* [x] Phase 7 — Order & Checkout
 * [ ] Phase 8 — Payment
 * [ ] Phase 9 — Wallet
 * [ ] Phase 10 — Outbox & RabbitMQ
@@ -121,6 +130,10 @@ None. Phase 6 is complete under available validation; SQL Server integration/con
 
 ## Known Issues
 
+* Order SQL runtime persistence, shared Order/Cart transaction rollback, concurrent idempotency, uniqueness and rowversion remain unverified without SQL Server. Five implemented Order SQL tests are explicitly skipped.
+* Order/Cart atomic enlistment assumes the current shared physical SQL Server database and scoped contexts. Separate-service extraction will need a durable consumption/reconciliation protocol; it was not implemented now.
+* Checkout checks physical availability across active warehouses without allocating a fulfilment warehouse, reserving or deducting stock. It does not guarantee availability when payment is verified later.
+* Unpaid checkout checks discount eligibility but does not consume usage. Verified-payment purchase/redemption accounting remains deferred; no payment, refund or Shipping behavior was added.
 * Pricing/Discount SQL runtime persistence, schedule locking, transaction rollback, rowversion and Cart/Inventory isolation remain unverified without SQL Server. Five implemented Phase 6 SQL tests are explicitly skipped.
 * Discount previews never consume usage. Usage limits/counts support eligibility, but accepted-order redemption and atomic usage accounting belong to a future checkout/order workflow.
 * Pricing previews are informational snapshots across module-owned contexts, not binding checkout totals. A later checkout must recalculate and define acceptance boundaries.
@@ -130,6 +143,26 @@ None. Phase 6 is complete under available validation; SQL Server integration/con
 * Catalog SQL query execution, relational constraints, transaction rollback, rowversion concurrency and hierarchy application locks remain unverified against a live SQL Server. These database-dependent checks were skipped/deferred to Docker SQL Server.
 * SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime. The user explicitly deferred these integration tests to Docker SQL Server; this does not block Phase 2 completion under the revised scope.
 * SQL Server/LocalDB is not available on this machine. No SQL Server or LocalDB installation/use or persistent database modification is authorized for current validation.
+
+## Phase 7 Verification
+
+* Affected API and Order test projects built successfully with 0 warnings and 0 errors.
+* Order tests: 24 passed, 0 failed, 5 SQL-backed tests skipped.
+* Regression suites: Cart 13 passed/5 skipped; Catalog 27 passed; Inventory 15 passed/8 skipped; Pricing/Discount 35 passed/5 skipped; Identity 23 passed/13 skipped; Foundation 15 passed/1 skipped. Total: 152 passed, 0 failed, 37 SQL-dependent tests skipped.
+* SQL test environment variables were cleared only for test processes. No live SQL Server was accessed or modified.
+* Checkout tests cover empty Cart, successful/multiple-item checkout, inactive/missing variants, invalid quantity, missing price, insufficient/inactive-warehouse availability, totals/discounts/currency rounding, optional address snapshots and invalid input.
+* The mandatory stock=5/Cart quantity=2 test passes: Order quantity and price snapshots are correct, inventory stays 5, no movement/reservation is created, and only the Cart items are cleared.
+* Historical Order reads retain original product name/prices after Catalog/Pricing changes. Snapshot and audit mutation guards, lifecycle transitions, unpaid cancellation and paid/terminal cancellation rejection are tested.
+* HTTP tests verify server owner authority, denied cross-user reads/cancellation, ignored client prices/discounts/payable amounts/availability/user IDs, response/error/correlation conventions and existing Identity management permission policies.
+* Persistent idempotency replay returns the same logical Order, rejects changed payloads and leaves new Cart contents alone. Keys are scoped to their authenticated owner.
+* Five SQL-backed tests implement persisted checkout/no Inventory mutations, concurrent same-key requests, rollback after both Order/Cart flushes on the shared connection, changed-Cart detection, and uniqueness/ownership/status audit/rowversion. They compiled and were skipped because SQL Server is unavailable.
+* Database-free command/API tests use actual calculation/query code with EF InMemory contexts and explicit substitute transaction units; they do not prove SQL atomicity, locking, constraints or concurrency. Offline SQL model/read-projection checks block connection opening.
+* InitialOrder adds only ordering-owned schema objects, constraints, indexes and snapshots. AddOrderPermissions adds only orders.view/orders.manage and Administrator grants. Earlier migrations remain unchanged.
+* Reviewed forward scripts: artifacts/order-migration.sql and artifacts/order-permissions.sql. EF confirms no pending Order, Identity, Cart or Inventory model changes.
+* Domain/Application monetary values use decimal and reuse established currency rounding. Module communications use contracts; Order has no access to other module internals or Inventory mutation interfaces.
+* No migration was applied, no database was created/reset/modified, and no SQL Server/LocalDB/Docker was installed or used.
+* NuGet security metadata was refreshed outside the sandbox after a blocked metadata fetch. Parallel regression builds briefly collided on a shared DLL; affected checks were rerun sequentially and passed.
+* No Phase 8 or later functionality was implemented.
 
 ## Phase 6 Verification
 
@@ -283,6 +316,21 @@ None. Phase 6 is complete under available validation; SQL Server integration/con
 * Existing Identity permission handling is extended with pricing.manage and discount.manage through an incremental seed migration. Foundation/Identity infrastructure was reused without redesign.
 * Pricing quotes are informational previews. Checkout must recalculate in a later phase. SQL runtime verification remains deferred.
 
+### Order and Checkout
+
+* Checkout loads the authenticated owner's active Cart/revision, validates Catalog variants, recalculates through Pricing/Discount, checks advisory Inventory availability and persists historical snapshots in AwaitingPayment.
+* Pending -> AwaitingPayment/Cancelled/Failed; AwaitingPayment -> Paid/Cancelled/Failed; Paid -> Processing; Processing -> Shipped; Shipped -> Completed. Completed/Cancelled/Failed are terminal.
+* Customers cancel only their own Pending/AwaitingPayment orders. Administrative state changes follow the graph and cannot set Paid; that edge is reserved for future trusted payment verification.
+* Order/items/address/currency/totals are historical snapshots. EF protects purchase data and audit from mutation; root status changes use revision/rowversion and append actor/time/correlation audit.
+* Existing money precision and rounding apply, including the shared 1,000,000,000,000 bound on line/order totals. Payable amount is discounted merchandise lines only; tax/shipping charges and currency conversion are deferred.
+* Optional Checkout address data is snapshotted without adding profile or Shipping infrastructure. Physical availability is aggregated across active stocks/warehouses; digital products require no warehouse stock.
+* IdempotencyKey is a required GUID, scoped to the server-authenticated owner and persisted with a normalized structured request fingerprint. Replays resolve before Cart/current product/price validation, return the same Order and never clear a new Cart.
+* A narrow per-user SQL checkout application lock and unique user/key + Cart/revision indexes prevent duplicate consumption. Cart revision/rowversion protects concurrent edits.
+* Cart implements a small checkout snapshot/conditional-clear contract. A generic infrastructure-only SQL transaction participant shares one connection/transaction between module-owned Cart and Order contexts. Validation failures or save failures roll back both; no ambient/distributed transaction was introduced.
+* Catalog variant references now include product name for snapshots; Inventory exposes a batched read-only availability contract. Existing module internals and migrations were preserved.
+* Checkout/cancellation never deduct or reserve stock, create movements, call payment services or create refunds. Unpaid orders do not consume discount usage; payment/redemption/final stock deduction remain later work.
+* SQL runtime verification is deferred; Phase 7 completion uses the successful available validation requested by the user.
+
 ### Payment
 
 Payment verification is server-side.
@@ -311,4 +359,4 @@ Redis is not the source of truth for financial or inventory data.
 
 ## Next Phase
 
-Phase 7 — Order & Checkout (not started; requires a new user request). Database integration/concurrency verification remains deferred to a future authorized SQL Server environment.
+Phase 8 — Payment (not started; requires a new user request). Database integration/concurrency verification remains deferred to a future authorized SQL Server environment.

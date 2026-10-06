@@ -16,7 +16,7 @@ internal sealed class CatalogVariantReferences(CatalogDbContext context) : ICata
                           context.Categories.Any(category => category.Id == product.CategoryId && category.IsActive) &&
                           (product.BrandId == null || context.Brands.Any(brand => brand.Id == product.BrandId && brand.IsActive)) &&
                           variant.Values.All(selection => context.AttributeValues.Any(value => value.Id == selection.ValueId && value.IsActive) &&
-                              context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive)), product.Id, product.CategoryId))
+                              context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive)), product.Id, product.CategoryId, product.Name))
             .ToListAsync(ct);
     }
     public Task<CatalogVariantReference?> GetAsync(Guid variantId, CancellationToken ct) =>
@@ -28,6 +28,6 @@ internal sealed class CatalogVariantReferences(CatalogDbContext context) : ICata
              context.Categories.Any(category => category.Id == product.CategoryId && category.IsActive) &&
              (product.BrandId == null || context.Brands.Any(brand => brand.Id == product.BrandId && brand.IsActive)) &&
              variant.Values.All(selection => context.AttributeValues.Any(value => value.Id == selection.ValueId && value.IsActive) &&
-                 context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive)), product.Id, product.CategoryId))
+                 context.Attributes.Any(attribute => attribute.Id == selection.AttributeId && attribute.IsActive)), product.Id, product.CategoryId, product.Name))
         .SingleOrDefaultAsync(ct);
 }
