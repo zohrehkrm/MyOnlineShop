@@ -27,7 +27,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             new { Key = IdentityPermissions.ManageCatalog }, new { Key = IdentityPermissions.ViewInventory },
             new { Key = IdentityPermissions.ReceiveInventory }, new { Key = IdentityPermissions.AdjustInventory },
             new { Key = IdentityPermissions.DeductInventory }, new { Key = IdentityPermissions.ManagePricing }, new { Key = IdentityPermissions.ManageDiscount },
-            new { Key = IdentityPermissions.ViewOrders }, new { Key = IdentityPermissions.ManageOrders }, new { Key = IdentityPermissions.CreditWallet });
+            new { Key = IdentityPermissions.ViewOrders }, new { Key = IdentityPermissions.ManageOrders }, new { Key = IdentityPermissions.CreditWallet },
+            new { Key = IdentityPermissions.ManageShippingMethods }, new { Key = IdentityPermissions.ManageShipments }, new { Key = IdentityPermissions.ViewShipments });
         modelBuilder.Entity<RolePermission>().HasData(
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageUsers },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageRoles },
@@ -40,7 +41,10 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageDiscount },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ViewOrders },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageOrders },
-            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.CreditWallet });
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.CreditWallet },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageShippingMethods },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageShipments },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ViewShipments });
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

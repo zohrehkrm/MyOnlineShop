@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Domain/MyOnlineShop.Refund.Domain.csproj" />
+    <ProjectReference Include="../Contracts/MyOnlineShop.Refund.Contracts.csproj" />
+    <ProjectReference Include="../../Order/Contracts/MyOnlineShop.Order.Contracts.csproj" />
+    <ProjectReference Include="../../Inventory/Contracts/MyOnlineShop.Inventory.Contracts.csproj" />
+    <ProjectReference Include="../../Wallet/Contracts/MyOnlineShop.Wallet.Contracts.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
+  </ItemGroup>
+</Project>

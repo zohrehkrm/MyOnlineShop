@@ -1,19 +1,21 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using MyOnlineShop.BuildingBlocks.Abstractions;
+using MyOnlineShop.BuildingBlocks.Abstractions.Messaging;
 using MyOnlineShop.Cart.Contracts;
 using MyOnlineShop.Catalog.Contracts;
 using MyOnlineShop.Inventory.Contracts;
 using MyOnlineShop.Order.Contracts;
 using MyOnlineShop.Order.Domain;
 using MyOnlineShop.Pricing.Contracts;
+using MyOnlineShop.Shipping.Contracts;
 using OrderAggregate = MyOnlineShop.Order.Domain.Order;
 
 namespace MyOnlineShop.Order.Application;
 
 public sealed class CheckoutCommands(IOrderStore store, IOrderUnitOfWork unit, ICheckoutCart carts,
     ICatalogVariantReferences catalog, IPricingCalculation pricing, IInventoryAvailability inventory,
-    TimeProvider clock, IRequestContext request) : ICheckoutCommands
+    TimeProvider clock, IRequestContext request, IOutboxWriter outbox, IEnumerable<IShippingQuotes> shippingQuotes) : ICheckoutCommands
 {
     public async Task<OrderDto> CreateAsync(Guid userId, CheckoutInput input, CancellationToken ct)
     {
@@ -28,7 +30,12 @@ public sealed class CheckoutCommands(IOrderStore store, IOrderUnitOfWork unit, I
         AddressDto? address;
         try { address = input.Address is null ? null : OrderAddress.Create(input.Address).Dto(); }
         catch (OrderRuleException error) { throw OrderException.Invalid(error.Message); }
-        var fingerprint = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new { Currency = currency, Coupon = coupon, Address = address })));
+        if (input.Shipping is not null && input.Address is not null) throw OrderException.Invalid("Use Shipping.Address for a shipping selection, not both address inputs.");
+        // Preserve pre-Shipping request fingerprints for existing idempotent checkouts.
+        var fingerprintBytes = input.Shipping is null
+            ? JsonSerializer.SerializeToUtf8Bytes(new { Currency = currency, Coupon = coupon, Address = address })
+            : JsonSerializer.SerializeToUtf8Bytes(new { Currency = currency, Coupon = coupon, Address = address, Shipping = input.Shipping });
+        var fingerprint = Convert.ToHexString(SHA256.HashData(fingerprintBytes));
         return await unit.ExecuteAsync(true, async token =>
         {
             await unit.LockCheckoutAsync(userId, token);
@@ -63,12 +70,23 @@ public sealed class CheckoutCommands(IOrderStore store, IOrderUnitOfWork unit, I
             var availability = (physical.Length == 0 ? [] : await inventory.GetAsync(physical, token)).ToDictionary(value => value.ProductVariantId);
             if (items.Any(item => item.ProductKind == "Physical" && (!availability.TryGetValue(item.ProductVariantId, out var stock) || stock.AvailableQuantity < item.Quantity)))
                 throw OrderException.Conflict("Insufficient current inventory. Availability is not reserved.");
+            ShippingQuoteSnapshot? shipping = null;
+            if (input.Shipping is not null)
+            {
+                if (physical.Length == 0) throw OrderException.Invalid("Digital-only orders do not require shipping.");
+                var calculator = shippingQuotes.SingleOrDefault() ?? throw OrderException.Invalid("Shipping quotation is unavailable.");
+                shipping = await calculator.CalculateAsync(new() { ShippingMethodId = input.Shipping.ShippingMethodId, Currency = currency,
+                    Address = input.Shipping.Address }, token);
+                if (shipping.ShippingMethodId != input.Shipping.ShippingMethodId || shipping.Currency != currency)
+                    throw OrderException.Invalid("Shipping quotation does not match the selection.");
+            }
             var order = OrderAggregate.Create(userId, cart.Id.Value, snapshot.Revision, input.IdempotencyKey, fingerprint,
-                currency, quote.CalculatedAtUtc, clock.GetUtcNow(), items, input.Address);
+                currency, quote.CalculatedAtUtc, clock.GetUtcNow(), items, input.Address, shipping);
             order.Transition(OrderStatus.AwaitingPayment, clock.GetUtcNow());
             store.Add(order);
             store.Audit(OrderAudit.Record(order.Id, userId, "CheckoutCreated", clock.GetUtcNow(), request.CorrelationId));
             await carts.ClearAsync(userId, cart.Id.Value, snapshot.Revision, token);
+            await outbox.EnqueueAsync(new OrderCreatedIntegrationEventV1(order.Id, order.CreatedAtUtc, order.Id, order.PayableAmount, order.Currency), request.CorrelationId, token);
             return order.Dto();
         }, ct);
     }

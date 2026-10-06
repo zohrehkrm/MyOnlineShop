@@ -11,6 +11,11 @@ public sealed class InventoryUnitOfWork(InventoryDbContext context) : IInventory
     {
         try
         {
+            // A message processor owns the encompassing Inbox + Inventory transaction.
+            if (context.Database.CurrentTransaction is not null)
+            {
+                var joinedResult = await action(ct); await context.SaveChangesAsync(ct); return joinedResult;
+            }
             return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
             {
                 context.ChangeTracker.Clear();

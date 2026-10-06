@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MyOnlineShop.Shipping.Contracts;
 
 namespace MyOnlineShop.Order.Contracts;
 
@@ -8,6 +9,7 @@ public sealed class CheckoutInput
     [Required] public string Currency { get; init; } = "";
     [StringLength(64)] public string? CouponCode { get; init; }
     public AddressInput? Address { get; init; }
+    public ShippingSelectionInput? Shipping { get; init; }
 }
 public sealed class AddressInput
 {
@@ -22,8 +24,10 @@ public sealed record AddressDto(string Recipient, string Street, string City, st
 public sealed record OrderItemDto(Guid Id, Guid ProductVariantId, string Sku, string ProductName, string ProductKind,
     Guid PriceId, Guid? DiscountId, decimal UnitPrice, decimal UnitDiscount, decimal DiscountAmount, decimal FinalUnitPrice, int Quantity, decimal LineTotal);
 public sealed record OrderDto(Guid Id, string Status, string Currency, decimal Subtotal, decimal DiscountTotal, decimal PayableAmount,
-    DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc, DateTimeOffset PricedAtUtc, AddressDto? Address, IReadOnlyList<OrderItemDto> Items);
-public sealed record OrderSummaryDto(Guid Id, string Status, string Currency, decimal Subtotal, decimal DiscountTotal, decimal PayableAmount, DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc, DateTimeOffset PricedAtUtc, AddressDto? Address, IReadOnlyList<OrderItemDto> Items,
+    decimal ShippingCost = 0, ShippingQuoteSnapshot? Shipping = null);
+public sealed record OrderSummaryDto(Guid Id, string Status, string Currency, decimal Subtotal, decimal DiscountTotal, decimal PayableAmount, DateTimeOffset CreatedAtUtc,
+    decimal ShippingCost = 0);
 public sealed record OrderPage(IReadOnlyList<OrderSummaryDto> Items, int Page, int PageSize, int TotalCount);
 public interface ICheckoutCommands { Task<OrderDto> CreateAsync(Guid userId, CheckoutInput input, CancellationToken ct); }
 public interface IOrderCommands

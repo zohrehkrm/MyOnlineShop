@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MyOnlineShop.BuildingBlocks.Abstractions;
+using MyOnlineShop.BuildingBlocks.Abstractions.Messaging;
+using MyOnlineShop.BuildingBlocks.Infrastructure.Messaging;
 using MyOnlineShop.BuildingBlocks.Infrastructure;
 using MyOnlineShop.Cart.Application;
 using MyOnlineShop.Cart.Contracts;
@@ -74,6 +76,8 @@ internal static class MemoryModules
     {
         Replace<OrderDbContext>(services); Replace<CartDbContext>(services); Replace<PricingDbContext>(services);
         Replace<DiscountDbContext>(services); Replace<InventoryDbContext>(services);
+        Replace<MessagingDbContext>(services);
+        services.RemoveAll<IOutboxWriter>(); services.AddScoped<IOutboxWriter, MemoryOutboxWriter>();
         services.RemoveAll<IOrderUnitOfWork>(); services.AddScoped<IOrderUnitOfWork, MemoryOrderUnit>();
         services.RemoveAll<ICartUnitOfWork>(); services.AddScoped<ICartUnitOfWork, MemoryCartUnit>();
         services.RemoveAll<IPriceUnitOfWork>(); services.AddScoped<IPriceUnitOfWork, MemoryPriceUnit>();
@@ -99,6 +103,19 @@ internal static class MemoryModules
         await inventory.SaveChangesAsync();
     }
 }
+// Explicit test substitute; the production writer always requires an enlisted SQL transaction.
+internal sealed class MemoryOutboxWriter(MessagingDbContext db) : IOutboxWriter
+{
+    public async Task EnqueueAsync(IIntegrationEvent message, string correlationId, CancellationToken ct)
+    {
+        var envelope = MessageEnvelope.From(message, correlationId);
+        if (await db.Outbox.AnyAsync(value => value.Id == message.EventId, ct)) return;
+        db.Outbox.Add(new() { Id = message.EventId, EventType = envelope.EventType, Version = envelope.Version,
+            Payload = envelope.Payload.GetRawText(), Fingerprint = MessageFingerprint.Of(envelope), CorrelationId = correlationId,
+            CreatedAtUtc = message.OccurredAtUtc, NextAttemptAtUtc = message.OccurredAtUtc });
+        await db.SaveChangesAsync(ct);
+    }
+}
 internal sealed class Harness : IDisposable
 {
     private readonly ServiceProvider _provider;
@@ -106,7 +123,7 @@ internal sealed class Harness : IDisposable
     public IServiceProvider Services => _scope.ServiceProvider;
     public CatalogReferences Catalog { get; } = new();
     public Guid User { get; } = Guid.NewGuid();
-    public Harness()
+    public Harness(Action<IServiceCollection>? additionalServices = null)
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["ConnectionStrings:SqlServer"] = "Server=localhost;Database=OrderOffline;Integrated Security=True" }).Build();
@@ -115,6 +132,7 @@ internal sealed class Harness : IDisposable
         services.AddPricingInfrastructure(configuration); services.AddDiscountInfrastructure(configuration);
         services.AddInventoryInfrastructure(configuration); services.AddOrderInfrastructure(configuration);
         MemoryModules.Configure(services, Catalog); services.AddSingleton<IRequestContext, RequestContext>();
+        additionalServices?.Invoke(services);
         _provider = services.BuildServiceProvider(); _scope = _provider.CreateScope();
     }
     public Task Seed(bool second = false, bool price = true, long stock = 5) => MemoryModules.SeedAsync(Services, Catalog, second, price, stock);

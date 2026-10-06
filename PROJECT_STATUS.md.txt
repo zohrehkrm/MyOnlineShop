@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-Phase 9 — Wallet
+Phase 12 — Shipping
 
 ## Status
 
-Complete under the user-approved database-free validation scope — 2026-10-06
+Complete under infrastructure-free validation; live SQL and verified-payment fulfillment integration remain deferred — 2026-10-06
 
 ## Completed
 
@@ -106,6 +106,40 @@ Complete under the user-approved database-free validation scope — 2026-10-06
 * InitialWallet and incremental AddWalletPermission migrations and forward SQL scripts generated/reviewed offline
 * Phase 9 affected build and available Wallet/Identity/Foundation validation passed; SQL-dependent tests implemented and skipped
 * Wallet financial rules, API, trusted boundaries, migration safety and deferred SQL validation documented in WALLET.md
+* Shared versioned messaging contracts, bounded envelope validation and immutable Outbox/Inbox history
+* Messaging-owned SQL Server context, schema, migration history and InitialMessaging migration reviewed offline
+* Checkout Order/Cart/Outbox persistence enlisted in one local SQL transaction; idempotent checkout emits one OrderCreatedIntegrationEventV1
+* SQL Outbox claims with renewable fenced leases, bounded persisted retries and retained terminal failures
+* RabbitMQ abstraction, confirmed mandatory persistent publication, configurable durable queues/dead letters and background workers
+* Generic manual-ack consumer infrastructure and transactional Inbox deduplication, retry and failure persistence
+* PaymentSucceededIntegrationEventV1 contract and Inventory consumer reuse existing atomic stock deduction with stable operation IDs
+* Multi-line Inventory consumption commits with Inbox or rolls back completely; shortage emits InventoryUnavailableIntegrationEventV1 through Outbox
+* Messaging correlation propagation, safe structured diagnostics and externally configured broker settings; workers disabled by default
+* Phase 10 available tests and regression suite passed; SQL/RabbitMQ tests implemented and skipped; true Payment producer integration remains blocked by Phase 8
+* Messaging configuration, delivery guarantees, migration safety and recovery procedures documented in MESSAGING.md
+* Refund Domain, Contracts, Application and Infrastructure projects with independently owned coordination schema
+* Refund identity, server-owned order/recipient/amount/currency snapshot, durable schedule, status, attempts, safe failure code and Wallet ledger reference
+* Stable PaymentId-derived refund/credit keys, database unique constraints and immutable value/completed-history guards
+* Existing Inventory failure event consumed through the shared Inbox; Pending Refund and refund request Outbox saved in the same local transaction
+* Configurable durable refund delay defaults to 60 minutes; per-payment SQL locks serialize scheduling and emit versioned due events atomically
+* Existing Wallet credit/ledger service reused without balance access or Wallet redesign; stable credit fingerprint recovers a Wallet commit followed by refund persistence failure
+* Durable retry/backoff and retained terminal failures; requested/due/completed/failed events use the existing Outbox publisher
+* Authoritative future Payment evidence contract requires matching payment/order/owner/amount/currency before credit; no production adapter or fake Payment is registered
+* Phase 11 available tests passed; SQL/RabbitMQ runtime tests are skipped and true Payment end-to-end verification remains blocked
+* InitialRefund migration and forward SQL reviewed offline; REFUND.md records configuration, transaction ownership, recovery and missing Phase 8 dependency
+* Shipping Domain, Contracts, Application, Infrastructure and Presentation projects with module-owned SQL context/schema/history
+* Validated full shipping address snapshots with recipient, international phone, state/province, city, street, postal/country and optional building/unit
+* Generic configurable shipping methods, unique normalized codes, explicit currency, decimal cost, activation and tracking requirement
+* Central server-side shipping calculator reuses existing money validation; flat method cost supports future rules without external carriers
+* Optional checkout Shipping selection persists immutable method/cost/address snapshots and includes server-calculated ShippingCost in PayableAmount
+* Legacy checkout fingerprints, addresses and totals preserved; additive zero-default shipping cost and nullable snapshot columns
+* Read-only Order shipping contract validates paid physical ownership/association; one historical Shipment per Order with unique constraint
+* Controlled Pending/Preparing/Shipped/InTransit/Delivered/Cancelled lifecycle, tracking/carrier assignment and ordered server timestamps
+* Revision and SQL rowversion concurrency, owner-only shipment reads and explicit shipping method/management/view permissions
+* Transactional Shipping audit and safe identifier/correlation logs; no profile, inventory, payment, wallet or refund mutation
+* InitialShipping, AddOrderShipping and AddShippingPermissions generated/reviewed offline with forward scripts; no migration applied
+* Phase 12 focused Shipping and all available regression tests passed; SQL tests and true Payment fulfillment E2E explicitly skipped
+* Shipping API, checkout compatibility, migration safety, ownership and deferred runtime validation documented in SHIPPING.md
 
 ## Current Objective
 
@@ -115,7 +149,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 9 is complete under available validation; SQL Server integration/concurrency verification is deferred to a future authorized environment. Phase 8 remains unimplemented; Phase 10 was not started.
+None. Phase 12 is complete under available infrastructure-free validation. SQL runtime/concurrency verification and true Payment -> paid Order -> Shipment integration remain deferred. Phase 8 remains absent and Phase 11 production refunds remain blocked by missing payment evidence. Phase 13 was not started.
 
 ## Completed Phases
 
@@ -129,9 +163,9 @@ None. Phase 9 is complete under available validation; SQL Server integration/con
 * [x] Phase 7 — Order & Checkout
 * [ ] Phase 8 — Payment
 * [x] Phase 9 — Wallet
-* [ ] Phase 10 — Outbox & RabbitMQ
-* [ ] Phase 11 — Refund Processing
-* [ ] Phase 12 — Shipping
+* [x] Phase 10 — Outbox & RabbitMQ
+* [x] Phase 11 — Refund Processing (foundation; Phase 8 production integration blocked)
+* [x] Phase 12 — Shipping
 * [ ] Phase 13 — Redis
 * [ ] Phase 14 — Reporting
 * [ ] Phase 15 — Admin & Warehouse APIs
@@ -140,13 +174,25 @@ None. Phase 9 is complete under available validation; SQL Server integration/con
 
 ## Known Issues
 
+* Shipping SQL persistence, native rowversion conflicts, concurrent creation/transition, uniqueness and flushed audit rollback remain unverified against live SQL Server. Five implemented Shipping SQL tests are explicitly skipped.
+* True verified Payment -> paid Order -> Shipment E2E is blocked/skipped by missing Phase 8. Shipment creation requires a paid/Processing physical Order; tests use explicit trusted Order domain fixtures, not a fake Payment implementation. Payment was not added or bypassed.
+* Legacy/unselected Orders retain original totals and ShippingCost=0, but lack the full captured shipping selection/address required by new Shipment creation. A future authorized fulfillment/backfill policy is needed; no historical purchase/address/cost data was fabricated. Physical checkout must provide Shipping to use the new fulfillment flow.
+* Phase 12 supports one shipment per Order and flat configured method cost. Split fulfillment, external carrier pricing, taxes, address books and automatic Order lifecycle synchronization are deferred. Shipping cancellation is logistics-only and performs no refund/restocking.
+* Phase 8 Payment entities/state/producer and authoritative IRefundPaymentEvidence adapter remain absent. No Payment functionality was duplicated. Refund scheduling does not dispatch without an adapter; completion cannot credit without matching evidence. True Payment-to-Inventory-to-delayed-Refund-to-Wallet end-to-end coverage is explicitly blocked/skipped.
+* The future Payment adapter must verify successful server-side payment and full-refund eligibility, including competing refund/reversal coordination. This phase supports one full Inventory refund per PaymentId; partial/split payment and payment-state orchestration remain outside its scope. Order snapshots establish candidate owner/value, not proof of successful payment.
+* Five Refund SQL tests remain unverified at runtime: local Refund/Outbox/Inbox rollback, concurrent requests/scheduling, uniqueness, duplicate consumption and Wallet-commit/refund-rollback recovery. The existing skipped RabbitMQ adapter test now includes duplicate refunds.due.v1 delivery. No live database/broker was accessed.
+* Refund and Wallet deliberately use separate local transactions with stable-key recovery. Terminal Inbox/Outbox failures can leave Processing refunds for reconciliation. Failed or uncertain Wallet outcomes must be reconciled using the original PaymentId/credit key and Wallet ledger before controlled recovery; no automated destructive reset or arbitrary refund API was added.
+* Messaging SQL claim/lease behavior, transaction rollback, application locks, concurrent Inbox processing and savepoints remain unverified against live SQL Server. Seven Messaging SQL tests and five affected Order SQL tests are implemented and skipped. Shared transaction contexts require the same physical database and MultipleActiveResultSets disabled.
+* One RabbitMQ adapter/topology/confirmation test is implemented and skipped without a broker. Deployment must supply matching routes, queues, credentials and trusted-producer access controls; workers default to disabled.
+* True Payment -> Outbox -> RabbitMQ -> Inventory end-to-end verification is explicitly blocked/skipped because Phase 8 is absent. Phase 10 creates only the versioned inbound contract and Inventory consumer; Payment production, verification, allocation selection and Order paid-state orchestration remain pending Phase 8. No Payment module or fake Payment implementation was created.
+* Messaging guarantees at-least-once delivery with durable consumer deduplication, not exactly-once broker transport. Terminal failures retain source payload and safe diagnostics; controlled recovery/retention is documented and no automated destructive purge was added. Inventory shortage emits the existing failure event consumed by the Phase 11 Refund foundation.
 * Wallet SQL transaction rollback, native conditional update behavior, application locking, concurrent debit/replay handling, relational constraints and immutable-ledger trigger remain unverified at runtime without SQL Server. Six implemented Wallet SQL tests are explicitly skipped, including the mandatory 1,000,000 balance/two 700,000 debits scenario.
-* Payment is absent from the repository and Phase 8 is not complete. Wallet exposes trusted future credit/debit integration contracts only; no payment-from-wallet or refund workflow was added.
-* Wallet owns its local transaction. Future cross-module financial workflows must define authorization, stable operation/reference IDs and their consistency protocol; no distributed transaction, outbox or messaging was added.
+* Payment is absent from the repository and Phase 8 is not complete. Phase 11 reuses Wallet's trusted credit contract for guarded refund processing; no payment-from-wallet workflow or Payment implementation was added.
+* Wallet owns its local transaction. Future cross-module financial workflows must define authorization, stable operation/reference IDs and their consistency protocol. Phase 10 adds shared messaging infrastructure but does not integrate Wallet financial workflows or introduce distributed transactions.
 * Order SQL runtime persistence, shared Order/Cart transaction rollback, concurrent idempotency, uniqueness and rowversion remain unverified without SQL Server. Five implemented Order SQL tests are explicitly skipped.
 * Order/Cart atomic enlistment assumes the current shared physical SQL Server database and scoped contexts. Separate-service extraction will need a durable consumption/reconciliation protocol; it was not implemented now.
 * Checkout checks physical availability across active warehouses without allocating a fulfilment warehouse, reserving or deducting stock. It does not guarantee availability when payment is verified later.
-* Unpaid checkout checks discount eligibility but does not consume usage. Verified-payment purchase/redemption accounting remains deferred; no payment, refund or Shipping behavior was added.
+* Unpaid checkout checks discount eligibility but does not consume usage. Verified-payment purchase/redemption accounting remains deferred; Phase 12 adds Shipping selection/cost/fulfillment without implementing Payment or accepted-payment discount accounting.
 * Pricing/Discount SQL runtime persistence, schedule locking, transaction rollback, rowversion and Cart/Inventory isolation remain unverified without SQL Server. Five implemented Phase 6 SQL tests are explicitly skipped.
 * Discount previews never consume usage. Usage limits/counts support eligibility, but accepted-order redemption and atomic usage accounting belong to a future checkout/order workflow.
 * Pricing previews are informational snapshots across module-owned contexts, not binding checkout totals. A later checkout must recalculate and define acceptance boundaries.
@@ -156,6 +202,49 @@ None. Phase 9 is complete under available validation; SQL Server integration/con
 * Catalog SQL query execution, relational constraints, transaction rollback, rowversion concurrency and hierarchy application locks remain unverified against a live SQL Server. These database-dependent checks were skipped/deferred to Docker SQL Server.
 * SQL-backed persistence, constraints and concurrent refresh rotation remain unverified at runtime. The user explicitly deferred these integration tests to Docker SQL Server; this does not block Phase 2 completion under the revised scope.
 * SQL Server/LocalDB is not available on this machine. No SQL Server or LocalDB installation/use or persistent database modification is authorized for current validation.
+
+## Phase 12 Verification
+
+* Final affected API/Shipping/Order/Identity build succeeded with 0 warnings and 0 errors.
+* Shipping tests: 18 passed, 0 failed, 6 skipped (five SQL tests and one Phase 8-blocked fulfillment end-to-end test).
+* All available database-free suites ran: final unique results 221 passed, 0 failed, 64 skipped. Breakdown: Shipping 18/6; Refund 20/6; Messaging 10/9; Order 25/5; Wallet 20/6; Pricing/Discount 35/5; Cart 13/5; Inventory 15/8; Catalog 27/0; Identity 23/13; Foundation 15/1.
+* Overall skips comprise 60 SQL-dependent tests, one RabbitMQ test and three Phase 8-blocked end-to-end tests. Connection/broker variables were cleared only for test processes; no external infrastructure was accessed.
+* The initial regression run found two obsolete test assumptions: Order forbade Shipping even at the Contracts boundary, and Wallet selected its permission migration by assuming it was last. Tests were updated to allow only Shipping.Contracts and pin the Wallet permission migration range; the affected Order suite and Wallet offline model test reran successfully. Production Wallet code was unchanged.
+* Focused coverage includes generic active/currency-filtered methods, decimal costs/precision/zero cost, normalized address, inactive/missing methods/orders, paid physical shipment creation, order relationship, historical snapshots and owner isolation.
+* Checkout/API coverage verifies authoritative shipping amount included in Order total, ignored client cost/owner/address overrides, changed-selection key conflict, replay after method-price changes, no shipment for unpaid/digital/legacy unselected Order, and no broad role-based management bypass.
+* State coverage includes valid progression, invalid/terminal transitions, mandatory/optional tracking, immutable dispatched tracking, stale/duplicate revision behavior and transactional snapshot/audit guards. API tests reuse envelopes, Problem Details, permission policies and correlation.
+* Five compiled SQL tests implement persisted Order/Shipment snapshots, concurrent creation/database uniqueness, concurrent status updates with one winner/audit, rollback after flushed state/audit and native rowversion/history protections. Explicit InMemory/authentication/unit-of-work substitutes do not prove these live SQL behaviors; true Payment E2E is separately blocked.
+* Offline SQL Server model/migration checks verify schemas, decimal(18,4), unique method/order indexes, rowversions, restrictive owned method relationship, state/tracking/timestamp constraints and new permission seeds. Shipping, Order and Identity have no pending model changes; read projections translate without opening a database.
+* InitialShipping adds only shipping-owned tables; AddOrderShipping adds nullable captured shipping data and zero-default ShippingCost, replacing only the totals constraint to include shipping; AddShippingPermissions adds only three permissions and Administrator grants. Prior migrations were preserved. Shipping/Order snapshot downgrade refuses destructive history removal.
+* Forward scripts generated/reviewed: artifacts/shipping-migration.sql, artifacts/order-shipping-migration.sql and artifacts/shipping-permissions.sql. No forward table/column deletion or financial-row rewriting was found. No migration was applied and no database was accessed/created/reset/modified.
+* No SQL Server/LocalDB/Docker/RabbitMQ service was installed, started or connected to. Shipping has no Payment/Wallet/Refund/Notification/Reporting dependency and adds no broker events, inventory reservation/deduction or Cart clearing.
+* No Phase 13 or later functionality was implemented.
+
+## Phase 11 Verification
+
+* Final affected API/Refund/module build succeeded with 0 warnings and 0 errors.
+* All available database-free suites were run: 203 passed, 0 failed, 58 skipped. Refund: 20 passed/6 skipped; Messaging: 10/9; Wallet: 20/6; Order: 25/5; Pricing/Discount: 35/5; Cart: 13/5; Inventory: 15/8; Catalog: 27/0; Identity: 23/13; Foundation: 15/1.
+* An initial Messaging test compilation failed because the expanded broker test lacked its new Refund contract reference. The reference was added/restored and the affected Messaging suite rerun successfully; the other available suites passed. No unrelated tests were repeated.
+* Refund skips comprise five implemented SQL integration tests and one blocked Phase 8 end-to-end test. Overall skips comprise 55 SQL-dependent tests, one RabbitMQ test and two Phase 8-blocked end-to-end tests. External test connection/broker variables were cleared only in test processes.
+* Available Refund tests cover server-snapshot creation, stable duplicate requests and changed-order rejection, existing Inventory command shortage -> failure event -> Pending request -> delayed credit, configurable due eligibility, original schedule retention, legal/illegal status transitions and invalid money/identity/messages.
+* Security/dependency tests reject mismatched authoritative payment/order/owner/amount/currency, prevent early credit and verify missing adapter keeps scheduling blocked. Refund exposes no arbitrary credit/issuing HTTP endpoint and does not use message actor/client money as recipient/amount authority.
+* Wallet tests in Refund reuse actual existing application/domain services with explicit SQL/InMemory substitutes. They verify one balance/ledger credit across duplicate integration deliveries, completion idempotency, stable-key recovery after Wallet commit and injected completion-save failure, retry after Wallet failure, obsolete attempt rejection and bounded safe terminal failure. These do not prove live SQL concurrency/transactions.
+* Five compiled SQL tests implement Refund/Outbox rollback after flush, concurrent request/database uniqueness, Inbox/request atomicity, simultaneous due schedulers plus concurrent duplicate Inbox consumption, and Wallet commit followed by Refund rollback then Inbox retry. Existing RabbitMQ test includes persistent duplicate refund due delivery through the confirmed adapter; it remains skipped.
+* Offline SQL Server model/migration checks passed, including decimal(18,4), unique PaymentId/IdempotencyKey, due/state/completion constraints, rowversion, owned schema and no pending Refund model changes. InitialRefund adds only refund-owned objects and refuses destructive history downgrade. Prior migrations were preserved.
+* artifacts/refund-migration.sql was generated and reviewed offline with no destructive forward operations. No migration was applied, no persistent/local database was accessed/created/reset/modified and no SQL Server/LocalDB/Docker/RabbitMQ service was installed or started.
+* No Payment entities/state/gateway/initiation/verification or fake producer/evidence adapter were implemented. Phase 8 production integration remains pending. No Phase 12 or later functionality was implemented.
+
+## Phase 10 Verification
+
+* Final affected API/module build succeeded with 0 warnings and 0 errors.
+* Full available regression suite: 183 passed, 0 failed, 52 skipped. Breakdown: Messaging 10 passed/9 skipped; Order 25/5; Wallet 20/6; Pricing/Discount 35/5; Cart 13/5; Inventory 15/8; Catalog 27/0; Identity 23/13; Foundation 15/1.
+* Messaging skips comprise seven SQL integration tests, one RabbitMQ integration test and one explicitly blocked true Payment producer end-to-end test. The remaining 43 skips are existing SQL-dependent module tests. Connection/broker test environment variables were cleared only in test processes.
+* Available tests cover publish failure/backoff/terminal retention, confirmed-send bookkeeping failure and stable replay IDs, lease fencing, immutable envelope/history guards, Inbox duplicate/conflict/retry decisions, durable-processing-before-ack and malformed/dead disposition.
+* Contract/Inventory tests reuse actual stock commands and verify duplicate payment delivery, stable payment-derived operation IDs, shortage failure events, invalid contracts and bounded validation. Checkout regression verifies a single orders.created event across idempotent replay. Test doubles do not prove SQL atomicity or broker behavior.
+* Deferred SQL tests implement business/Outbox commit and rollback, concurrent lease claims and crash recovery, persisted bounded outage retries, concurrent duplicate stock=1 consumption, multi-line shortage rollback with failure Outbox, Inbox-save rollback and bounded consumer failures. RabbitMQ test implements actual adapter confirmations, durable topology, manual ack and unroutable publication failure.
+* Offline EF SQL Server model/migration checks passed with no pending Messaging model changes. InitialMessaging creates only messaging-owned Inbox/Outbox tables, constraints and indexes. Existing migrations were preserved; downgrade refuses deleting durable messages/deduplication history.
+* Idempotent forward SQL was generated and reviewed in artifacts/messaging-migration.sql; no destructive forward operations were found. No migration was applied, no persistent database was accessed/modified/reset and no SQL Server/LocalDB/Docker/RabbitMQ service was installed or started.
+* PaymentSucceededIntegrationEventV1 is an integration contract only. Payment entity, state machine, initiation, verification, gateway and producer business logic remain pending Phase 8 by explicit user instruction. No Phase 11 refund processing or later-phase work was implemented.
 
 ## Phase 9 Verification
 
@@ -352,8 +441,8 @@ None. Phase 9 is complete under available validation; SQL Server integration/con
 * Pending -> AwaitingPayment/Cancelled/Failed; AwaitingPayment -> Paid/Cancelled/Failed; Paid -> Processing; Processing -> Shipped; Shipped -> Completed. Completed/Cancelled/Failed are terminal.
 * Customers cancel only their own Pending/AwaitingPayment orders. Administrative state changes follow the graph and cannot set Paid; that edge is reserved for future trusted payment verification.
 * Order/items/address/currency/totals are historical snapshots. EF protects purchase data and audit from mutation; root status changes use revision/rowversion and append actor/time/correlation audit.
-* Existing money precision and rounding apply, including the shared 1,000,000,000,000 bound on line/order totals. Payable amount is discounted merchandise lines only; tax/shipping charges and currency conversion are deferred.
-* Optional Checkout address data is snapshotted without adding profile or Shipping infrastructure. Physical availability is aggregated across active stocks/warehouses; digital products require no warehouse stock.
+* Existing money precision and rounding apply, including the shared 1,000,000,000,000 bound on line/order totals. Payable amount includes discounted merchandise plus the optional Phase 12 shipping quote; taxes and currency conversion remain deferred.
+* Optional legacy Checkout address data remains unchanged; Phase 12 adds a full immutable shipping method/cost/address snapshot without changing Identity registration. Physical availability remains advisory across active warehouses; digital products require no warehouse stock or shipping selection.
 * IdempotencyKey is a required GUID, scoped to the server-authenticated owner and persisted with a normalized structured request fingerprint. Replays resolve before Cart/current product/price validation, return the same Order and never clear a new Cart.
 * A narrow per-user SQL checkout application lock and unique user/key + Cart/revision indexes prevent duplicate consumption. Cart revision/rowversion protects concurrent edits.
 * Cart implements a small checkout snapshot/conditional-clear contract. A generic infrastructure-only SQL transaction participant shares one connection/transaction between module-owned Cart and Order contexts. Validation failures or save failures roll back both; no ambient/distributed transaction was introduced.
@@ -376,7 +465,7 @@ Payment operations must be idempotent.
 * Idempotency is persisted with a unique wallet/key and normalized structured fingerprint including canonical decimal amount, actor, direction and reference. Exact replays return the original result; changed payload/actor fails 409. Wallet/type/reference uniqueness additionally prevents reposting a business reference with a new key.
 * EF posting guards protect financial consistency and immutable history; SQL trigger rejects historical ledger UPDATE/DELETE and restrictive relationships prevent removing referenced wallets. InitialWallet Down refuses destructive financial-history removal.
 * wallet.credit reuses Identity permission policies and an incremental Administrator grant. Administrative target users are validated through the existing Identity query contract; actor/owner authority comes from authenticated claims.
-* Credit/debit remain trusted application contracts for later authorized workflows. No customer charging/debit endpoint, payment-from-wallet or refund processing is implemented; Phase 8 remains incomplete.
+* Credit/debit remain trusted application contracts. No customer charging/debit endpoint or payment-from-wallet is implemented; Phase 11 now reuses credit for guarded delayed refunds. Phase 8 remains incomplete.
 * Wallet commits its own module-local transaction. Cross-module financial orchestration, outbox/messaging and reconciliation belong to later explicitly requested work. Redis is not used for balance or idempotency.
 * Phase 9 completion uses successful available validation as requested. Six SQL integration tests remain deferred; actual SQL concurrency/transaction/constraint behavior has not been verified against a live server.
 
@@ -386,9 +475,34 @@ If payment succeeds but inventory is unavailable, refund processing is asynchron
 
 Do not block a request/thread for one hour.
 
+* Refund coordination has a separate owned schema/module because durable scheduling, retry and cross-module recovery are distinct from Wallet balance/ledger ownership. Module internals remain isolated; communication uses Order, Inventory and Wallet contracts.
+* Existing inventory.unavailable.v1 requests one full refund per PaymentId through shared Inbox/Outbox. An immutable Order snapshot supplies owner and candidate amount; required authoritative Payment evidence must match before credit.
+* DueAtUtc persists the configurable delay (default 60 minutes). Per-payment transaction application locks, reload and unique keys protect scheduling/request concurrency. Processing represents an atomically scheduled durable due event.
+* Wallet retains its original independent balance/ledger transaction. Stable credit keys/reference/fingerprints handle the commit gap before Refund/Inbox/Outbox completion without double credit. No distributed transaction or direct Wallet table mutation is introduced.
+* Durable attempt counts/backoff/failure codes retain failures. Safe terminal events, correlation and ledger references support reconciliation; no arbitrary refund API or automated financial-history deletion exists.
+* Scheduler/Completion require a future Phase 8 payment-evidence adapter; no default fake verification is provided. Production requests remain Pending without it. Refund foundation completion does not imply live Payment integration or SQL/broker runtime validation.
+
 ### Messaging
 
 Important integration events use Transactional Outbox before RabbitMQ publication.
+
+* Messaging owns persistence independently of Foundation and business contexts. Local SQL participants share a connection/transaction; no distributed transaction is used.
+* Checkout persists orders.created.v1 atomically with Order and Cart changes. Outbox writing requires an enlisted transaction and preserves immutable IDs/content across retries.
+* RabbitMQ.Client 7.2.2 publication awaits publisher confirmations with mandatory routing and persistent messages. Durable configurable topology and reconnecting workers are disabled unless explicitly configured.
+* SQL leases fence concurrent publishers; bounded exponential retry dates/counts and terminal failures survive restarts. Confirmed publication can be replayed after bookkeeping failure, so consumers must remain idempotent.
+* Inbox is unique by MessageId/ConsumerName, checks immutable fingerprints and commits with Inventory effects. Broker acknowledgement follows durable commit; rejected business effects roll back before failure Outbox/Inbox persistence.
+* Payment success consumes explicitly allocated warehouse/variant lines through existing Inventory deduction. Stable payment-derived operation IDs add protection against a producer replay with a new event ID. Digital-only success may contain no stock lines.
+* Inventory shortage records inventory.unavailable.v1 without performing refunds. Future Phase 8 must produce verified, authorized success events and define allocation and paid-order orchestration; Phase 11 remains separate.
+* Correlation propagates into existing audit/logging infrastructure. Payloads, tokens, credentials and raw exception messages are not logged. Broker secrets and deployment topology come from external configuration.
+
+### Shipping
+
+* Shipping owns its methods, calculator, shipment state, tracking and audit. It communicates through a small Order read contract and has no financial-module or Inventory mutation dependency.
+* Optional checkout Shipping selection uses server method/currency/address validation and preserves the quote in Order. PayableAmount adds ShippingCost; existing no-selection fingerprints/totals remain unchanged. Shipment copies original quote details rather than current method prices or profile addresses.
+* One shipment per paid physical Order is enforced through application validation and a unique OrderId index. Existing unselected Orders are not silently backfilled/repriced. Multi-package fulfillment remains later work.
+* Controlled state transitions use ExpectedRevision and SQL rowversion. Tracking/carrier become immutable at dispatch; configured tracking requirements support generic collection/custom methods without hardcoded type branches.
+* Customer shipment reads validate Order ownership; management/view/method policies require explicit Identity permissions, never role-name bypass. Shipping audit commits with state and structured logs omit personal/payment data.
+* No automatic Order status mutation or unnecessary RabbitMQ event/consumer is introduced. SQL concurrency/runtime and true verified-payment fulfillment remain deferred; Phase 8 is not implemented here.
 
 ### Redis
 
@@ -396,4 +510,4 @@ Redis is not the source of truth for financial or inventory data.
 
 ## Next Phase
 
-Phase 10 — Outbox & RabbitMQ (not started; requires a new user request). Phase 8 — Payment also remains unimplemented and was not marked complete. Database integration/concurrency verification remains deferred to a future explicitly authorized SQL Server environment.
+Phase 13 — Redis (not started; requires a new user request). Phase 8 Payment remains unimplemented; its producer, paid Order integration and authoritative refund evidence/eligibility remain pending. Payment was not absorbed into Phase 12 or marked complete. SQL Server/RabbitMQ runtime and true Payment end-to-end validation remain deferred.

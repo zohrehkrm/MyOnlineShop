@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyOnlineShop.Order.Domain;
+using MyOnlineShop.Shipping.Contracts;
 using OrderAggregate = MyOnlineShop.Order.Domain.Order;
 
 namespace MyOnlineShop.Order.Infrastructure.Persistence;
@@ -15,7 +16,7 @@ public sealed class OrderDbContext(DbContextOptions<OrderDbContext> options) : D
         var order = model.Entity<OrderAggregate>();
         order.ToTable("Orders", table =>
         {
-            table.HasCheckConstraint("CK_Orders_Totals", "[Subtotal] > 0 AND [Subtotal] <= 1000000000000 AND [DiscountTotal] >= 0 AND [DiscountTotal] <= [Subtotal] AND [PayableAmount] = [Subtotal] - [DiscountTotal]");
+            table.HasCheckConstraint("CK_Orders_Totals", "[Subtotal] > 0 AND [Subtotal] <= 1000000000000 AND [DiscountTotal] >= 0 AND [DiscountTotal] <= [Subtotal] AND [ShippingCost] >= 0 AND [ShippingCost] <= 1000000000000 AND [PayableAmount] = [Subtotal] - [DiscountTotal] + [ShippingCost] AND [PayableAmount] <= 1000000000000");
             table.HasCheckConstraint("CK_Orders_Status", "[Status] IN ('Pending','AwaitingPayment','Paid','Processing','Shipped','Completed','Cancelled','Failed')");
             table.HasCheckConstraint("CK_Orders_Currency", "[Currency] IN ('IRR','USD','EUR','GBP','AED','TRY')");
         });
@@ -31,6 +32,27 @@ public sealed class OrderDbContext(DbContextOptions<OrderDbContext> options) : D
         order.Property(value => value.Subtotal).HasPrecision(18, 4);
         order.Property(value => value.DiscountTotal).HasPrecision(18, 4);
         order.Property(value => value.PayableAmount).HasPrecision(18, 4);
+        order.Property(value => value.ShippingCost).HasPrecision(18, 4).HasDefaultValue(0m);
+        order.OwnsOne(value => value.Shipping, shipping =>
+        {
+            shipping.Property(value => value.MethodCode).HasMaxLength(64).IsRequired();
+            shipping.Property(value => value.MethodName).HasMaxLength(100).IsRequired();
+            shipping.Property(value => value.Cost).HasPrecision(18, 4);
+            shipping.Property(value => value.Currency).HasMaxLength(3).IsUnicode(false).IsRequired();
+            shipping.OwnsOne(value => value.Address, address =>
+            {
+                address.Property(value => value.Recipient).HasMaxLength(200).IsRequired();
+                address.Property(value => value.PhoneNumber).HasMaxLength(16).IsRequired();
+                address.Property(value => value.State).HasMaxLength(100).IsRequired();
+                address.Property(value => value.City).HasMaxLength(100).IsRequired();
+                address.Property(value => value.Street).HasMaxLength(500).IsRequired();
+                address.Property(value => value.PostalCode).HasMaxLength(20).IsRequired();
+                address.Property(value => value.CountryCode).HasMaxLength(2).IsUnicode(false).IsRequired();
+                address.Property(value => value.Building).HasMaxLength(100);
+                address.Property(value => value.Unit).HasMaxLength(30);
+            });
+            shipping.Navigation(value => value.Address).IsRequired();
+        });
         order.HasMany(value => value.Items).WithOne().HasForeignKey(value => value.OrderId).OnDelete(DeleteBehavior.Restrict);
         order.Navigation(value => value.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
         order.OwnsOne(value => value.Address, address =>
@@ -66,7 +88,7 @@ public sealed class OrderDbContext(DbContextOptions<OrderDbContext> options) : D
     {
         foreach (var entry in ChangeTracker.Entries())
         {
-            if (entry.Entity is OrderItem or OrderAddress or OrderAudit && entry.State is EntityState.Modified or EntityState.Deleted)
+            if (entry.Entity is OrderItem or OrderAddress or OrderAudit or ShippingQuoteSnapshot or ShippingAddressDto && entry.State is EntityState.Modified or EntityState.Deleted)
                 throw new InvalidOperationException("Order snapshots and audit are immutable.");
             if (entry.Entity is OrderAggregate && (entry.State == EntityState.Deleted ||
                 entry.Properties.Any(property => property.IsModified && property.Metadata.Name is not ("Status" or "UpdatedAtUtc" or "Revision"))))

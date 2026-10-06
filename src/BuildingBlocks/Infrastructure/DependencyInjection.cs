@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MyOnlineShop.BuildingBlocks.Infrastructure.Persistence;
+using MyOnlineShop.BuildingBlocks.Infrastructure.Messaging;
 
 namespace MyOnlineShop.BuildingBlocks.Infrastructure;
 
@@ -34,6 +35,7 @@ public static class DependencyInjection
                 sql.MigrationsHistoryTable("__EFMigrationsHistory", "foundation");
             });
         });
+        services.AddMessagingPersistence(configuration);
         return services;
     }
 }

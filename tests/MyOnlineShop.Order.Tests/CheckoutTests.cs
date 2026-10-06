@@ -10,11 +10,22 @@ using MyOnlineShop.Order.Contracts;
 using MyOnlineShop.Order.Infrastructure.Persistence;
 using MyOnlineShop.Pricing.Contracts;
 using Xunit;
+using MyOnlineShop.BuildingBlocks.Infrastructure.Messaging;
 
 namespace MyOnlineShop.Order.Tests;
 
 public sealed class CheckoutTests
 {
+    [Fact]
+    public async Task Checkout_records_one_versioned_event_and_replay_does_not_enqueue_again()
+    {
+        using var h = new Harness(); await h.Seed(); await h.Add(); var input = h.Input();
+        var order = await h.Checkout(input); var replay = await h.Checkout(input); Assert.Equal(order.Id, replay.Id);
+        var message = await h.Services.GetRequiredService<MessagingDbContext>().Outbox.SingleAsync();
+        Assert.Equal(order.Id, message.Id); Assert.Equal("orders.created", message.EventType); Assert.Equal(1, message.Version);
+        Assert.Equal("Pending", message.Status); Assert.Equal("order-test", message.CorrelationId);
+        Assert.DoesNotContain("Recipient", message.Payload); Assert.Contains(order.Id.ToString(), message.Payload);
+    }
     [Fact]
     public async Task Checkout_reuses_currency_rounding_and_server_discount_calculation()
     {

@@ -30,13 +30,19 @@ public sealed class OrderUnitOfWork(OrderDbContext context, IEnumerable<ILocalSq
                 await using var transaction = await context.Database.BeginTransactionAsync(ct);
                 var cart = includeCart ? participants.SingleOrDefault(value => value.Name == "cart") ??
                     throw new InvalidOperationException("Cart transaction participant is required.") : null;
+                var messaging = participants.Single(value => value.Name == "messaging");
                 try
                 {
+                    await messaging.EnlistAsync(context.Database.GetDbConnection(), transaction.GetDbTransaction(), ct);
                     if (cart is not null) await cart.EnlistAsync(context.Database.GetDbConnection(), transaction.GetDbTransaction(), ct);
                     var result = await action(ct);
                     await context.SaveChangesAsync(ct); await transaction.CommitAsync(ct); return result;
                 }
-                finally { if (cart is not null) await cart.DetachAsync(CancellationToken.None); }
+                finally
+                {
+                    if (cart is not null) await cart.DetachAsync(CancellationToken.None);
+                    await messaging.DetachAsync(CancellationToken.None);
+                }
             });
         }
         catch (OrderRuleException error) { throw OrderException.Invalid(error.Message); }
@@ -62,7 +68,7 @@ public sealed class OrderReadStore(OrderDbContext context) : IOrderReadStore
             value.CreatedAtUtc, value.UpdatedAtUtc, value.PricedAtUtc,
             value.Address == null ? null : new AddressDto(value.Address.Recipient, value.Address.Street, value.Address.City, value.Address.PostalCode, value.Address.CountryCode),
             value.Items.OrderBy(item => item.Id).Select(item => new OrderItemDto(item.Id, item.ProductVariantId, item.Sku, item.ProductName, item.ProductKind,
-                item.PriceId, item.DiscountId, item.UnitPrice, item.UnitDiscount, item.DiscountAmount, item.FinalUnitPrice, item.Quantity, item.LineTotal)).ToList());
+                item.PriceId, item.DiscountId, item.UnitPrice, item.UnitDiscount, item.DiscountAmount, item.FinalUnitPrice, item.Quantity, item.LineTotal)).ToList(), value.ShippingCost, value.Shipping);
     public async Task<OrderDto> GetMyAsync(Guid userId, Guid orderId, CancellationToken ct)
     {
         OrderException.User(userId);
@@ -78,7 +84,7 @@ public sealed class OrderReadStore(OrderDbContext context) : IOrderReadStore
         if (page < 1 || size is < 1 or > 100 || ((long)page - 1) * size > int.MaxValue) throw OrderException.Invalid();
         query = query.AsNoTracking(); var count = await query.CountAsync(ct);
         var items = await query.OrderByDescending(value => value.CreatedAtUtc).ThenBy(value => value.Id).Skip((page - 1) * size).Take(size)
-            .Select(value => new OrderSummaryDto(value.Id, value.Status.ToString(), value.Currency, value.Subtotal, value.DiscountTotal, value.PayableAmount, value.CreatedAtUtc)).ToListAsync(ct);
+            .Select(value => new OrderSummaryDto(value.Id, value.Status.ToString(), value.Currency, value.Subtotal, value.DiscountTotal, value.PayableAmount, value.CreatedAtUtc, value.ShippingCost)).ToListAsync(ct);
         return new(items, page, size, count);
     }
 }

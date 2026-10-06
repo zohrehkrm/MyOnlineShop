@@ -1,5 +1,6 @@
 using MyOnlineShop.Order.Contracts;
 using MyOnlineShop.Pricing.Contracts;
+using MyOnlineShop.Shipping.Contracts;
 
 namespace MyOnlineShop.Order.Domain;
 
@@ -20,6 +21,8 @@ public sealed class Order
     public decimal Subtotal { get; private set; }
     public decimal DiscountTotal { get; private set; }
     public decimal PayableAmount { get; private set; }
+    public decimal ShippingCost { get; private set; }
+    public ShippingQuoteSnapshot? Shipping { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset PricedAtUtc { get; private set; }
@@ -29,7 +32,7 @@ public sealed class Order
     public IReadOnlyList<OrderItem> Items => _items.AsReadOnly();
 
     public static Order Create(Guid userId, Guid cartId, Guid cartRevision, Guid key, string fingerprint, string currency,
-        DateTimeOffset pricedAt, DateTimeOffset now, IReadOnlyList<OrderItem> items, AddressInput? address)
+        DateTimeOffset pricedAt, DateTimeOffset now, IReadOnlyList<OrderItem> items, AddressInput? address, ShippingQuoteSnapshot? shipping = null)
     {
         if (userId == Guid.Empty || cartId == Guid.Empty || cartRevision == Guid.Empty || key == Guid.Empty ||
             fingerprint.Length != 64 || pricedAt == default || items.Count is < 1 or > 100 ||
@@ -42,12 +45,20 @@ public sealed class Order
         foreach (var item in items) { item.Attach(order.Id); order._items.Add(item); }
         order.Subtotal = items.Sum(item => item.UnitPrice * item.Quantity);
         order.DiscountTotal = items.Sum(item => item.DiscountAmount);
-        order.PayableAmount = items.Sum(item => item.LineTotal);
+        if (shipping is not null)
+        {
+            if (shipping.Currency != order.Currency || shipping.ShippingMethodId == Guid.Empty || shipping.Address is null ||
+                !items.Any(item => item.ProductKind == "Physical") || address is not null)
+                throw new OrderRuleException("Shipping selection does not match the order.");
+            MoneyRules.Amount(shipping.Cost, order.Currency, true);
+            order.ShippingCost = shipping.Cost; order.Shipping = shipping;
+        }
+        order.PayableAmount = items.Sum(item => item.LineTotal) + order.ShippingCost;
         // Shared amount bounds and currency precision apply to totals as well as units.
         MoneyRules.Amount(order.Subtotal, order.Currency);
         MoneyRules.Amount(order.DiscountTotal, order.Currency, true);
         MoneyRules.Amount(order.PayableAmount, order.Currency, true);
-        if (order.PayableAmount != order.Subtotal - order.DiscountTotal) throw new OrderRuleException("Order totals are inconsistent.");
+        if (order.PayableAmount != order.Subtotal - order.DiscountTotal + order.ShippingCost) throw new OrderRuleException("Order totals are inconsistent.");
         return order;
     }
     public void Transition(OrderStatus next, DateTimeOffset now)
@@ -65,7 +76,7 @@ public sealed class Order
         Status = next; UpdatedAtUtc = now.ToUniversalTime(); Revision = Guid.NewGuid();
     }
     public OrderDto Dto() => new(Id, Status.ToString(), Currency, Subtotal, DiscountTotal, PayableAmount, CreatedAtUtc,
-        UpdatedAtUtc, PricedAtUtc, Address?.Dto(), Items.Select(item => item.Dto()).ToArray());
+        UpdatedAtUtc, PricedAtUtc, Address?.Dto(), Items.Select(item => item.Dto()).ToArray(), ShippingCost, Shipping);
 }
 public sealed class OrderItem
 {

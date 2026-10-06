@@ -73,6 +73,12 @@ namespace MyOnlineShop.Order.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<decimal>("ShippingCost")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)")
+                        .HasDefaultValue(0m);
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -106,7 +112,7 @@ namespace MyOnlineShop.Order.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_Orders_Status", "[Status] IN ('Pending','AwaitingPayment','Paid','Processing','Shipped','Completed','Cancelled','Failed')");
 
-                            t.HasCheckConstraint("CK_Orders_Totals", "[Subtotal] > 0 AND [Subtotal] <= 1000000000000 AND [DiscountTotal] >= 0 AND [DiscountTotal] <= [Subtotal] AND [PayableAmount] = [Subtotal] - [DiscountTotal]");
+                            t.HasCheckConstraint("CK_Orders_Totals", "[Subtotal] > 0 AND [Subtotal] <= 1000000000000 AND [DiscountTotal] >= 0 AND [DiscountTotal] <= [Subtotal] AND [ShippingCost] >= 0 AND [ShippingCost] <= 1000000000000 AND [PayableAmount] = [Subtotal] - [DiscountTotal] + [ShippingCost] AND [PayableAmount] <= 1000000000000");
                         });
                 });
 
@@ -252,7 +258,111 @@ namespace MyOnlineShop.Order.Infrastructure.Persistence.Migrations
                                 .HasForeignKey("OrderId");
                         });
 
+                    b.OwnsOne("MyOnlineShop.Shipping.Contracts.ShippingQuoteSnapshot", "Shipping", b1 =>
+                        {
+                            b1.Property<Guid>("OrderId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Cost")
+                                .HasPrecision(18, 4)
+                                .HasColumnType("decimal(18,4)");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .IsUnicode(false)
+                                .HasColumnType("varchar(3)");
+
+                            b1.Property<string>("MethodCode")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)");
+
+                            b1.Property<string>("MethodName")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)");
+
+                            b1.Property<DateTimeOffset>("QuotedAtUtc")
+                                .HasColumnType("datetimeoffset");
+
+                            b1.Property<bool>("RequiresTracking")
+                                .HasColumnType("bit");
+
+                            b1.Property<Guid>("ShippingMethodId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.HasKey("OrderId");
+
+                            b1.ToTable("Orders", "ordering");
+
+                            b1.WithOwner()
+                                .HasForeignKey("OrderId");
+
+                            b1.OwnsOne("MyOnlineShop.Shipping.Contracts.ShippingAddressDto", "Address", b2 =>
+                                {
+                                    b2.Property<Guid>("ShippingQuoteSnapshotOrderId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.Property<string>("Building")
+                                        .HasMaxLength(100)
+                                        .HasColumnType("nvarchar(100)");
+
+                                    b2.Property<string>("City")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("nvarchar(100)");
+
+                                    b2.Property<string>("CountryCode")
+                                        .IsRequired()
+                                        .HasMaxLength(2)
+                                        .IsUnicode(false)
+                                        .HasColumnType("varchar(2)");
+
+                                    b2.Property<string>("PhoneNumber")
+                                        .IsRequired()
+                                        .HasMaxLength(16)
+                                        .HasColumnType("nvarchar(16)");
+
+                                    b2.Property<string>("PostalCode")
+                                        .IsRequired()
+                                        .HasMaxLength(20)
+                                        .HasColumnType("nvarchar(20)");
+
+                                    b2.Property<string>("Recipient")
+                                        .IsRequired()
+                                        .HasMaxLength(200)
+                                        .HasColumnType("nvarchar(200)");
+
+                                    b2.Property<string>("State")
+                                        .IsRequired()
+                                        .HasMaxLength(100)
+                                        .HasColumnType("nvarchar(100)");
+
+                                    b2.Property<string>("Street")
+                                        .IsRequired()
+                                        .HasMaxLength(500)
+                                        .HasColumnType("nvarchar(500)");
+
+                                    b2.Property<string>("Unit")
+                                        .HasMaxLength(30)
+                                        .HasColumnType("nvarchar(30)");
+
+                                    b2.HasKey("ShippingQuoteSnapshotOrderId");
+
+                                    b2.ToTable("Orders", "ordering");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ShippingQuoteSnapshotOrderId");
+                                });
+
+                            b1.Navigation("Address")
+                                .IsRequired();
+                        });
+
                     b.Navigation("Address");
+
+                    b.Navigation("Shipping");
                 });
 
             modelBuilder.Entity("MyOnlineShop.Order.Domain.OrderAudit", b =>

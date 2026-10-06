@@ -47,7 +47,9 @@ public sealed class ModelTests
         Assert.Contains("OFFSET", readSql); Assert.Contains("[wallet].[Ledger]", readSql);
         using var identity = new IdentityDbContext(new DbContextOptionsBuilder<IdentityDbContext>().UseSqlServer(connection).AddInterceptors(new BlockConnection()).Options);
         Assert.False(identity.Database.HasPendingModelChanges());
-        var permissionSql = identity.GetService<IMigrator>().GenerateScript(fromMigration: identity.Database.GetMigrations().Reverse().Skip(1).First(),
+        var identityMigrations = identity.Database.GetMigrations().ToArray();
+        var walletMigrationIndex = Array.FindIndex(identityMigrations, value => value.EndsWith("_AddWalletPermission", StringComparison.Ordinal));
+        var permissionSql = identity.GetService<IMigrator>().GenerateScript(fromMigration: identityMigrations[walletMigrationIndex - 1], toMigration: identityMigrations[walletMigrationIndex],
             options: MigrationsSqlGenerationOptions.Idempotent);
         Assert.Contains(IdentityPermissions.CreditWallet, permissionSql); Assert.Contains("INSERT INTO", permissionSql); Assert.DoesNotContain("DROP TABLE", permissionSql);
         Assert.DoesNotContain("DELETE FROM", permissionSql);

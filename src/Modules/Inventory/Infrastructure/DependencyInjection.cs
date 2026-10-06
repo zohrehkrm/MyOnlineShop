@@ -7,6 +7,7 @@ using MyOnlineShop.BuildingBlocks.Infrastructure.Persistence;
 using MyOnlineShop.Inventory.Application;
 using MyOnlineShop.Inventory.Contracts;
 using MyOnlineShop.Inventory.Infrastructure.Persistence;
+using MyOnlineShop.BuildingBlocks.Abstractions.Messaging;
 
 namespace MyOnlineShop.Inventory.Infrastructure;
 
@@ -33,6 +34,8 @@ public static class DependencyInjection
         services.AddScoped<WarehouseCommands>(); services.AddScoped<StockCommands>(); services.AddScoped<InventoryCommands>();
         services.AddScoped<IInventoryCommands>(provider => provider.GetRequiredService<InventoryCommands>());
         services.AddScoped<IInventoryDeduction>(provider => provider.GetRequiredService<InventoryCommands>());
+        services.AddScoped<IMessageConsumer, PaymentSucceededConsumer>();
+        services.AddScoped<ILocalSqlTransactionParticipant>(provider => new LocalSqlTransactionParticipant<InventoryDbContext>(provider.GetRequiredService<InventoryDbContext>(), "inventory"));
         return services;
     }
 }

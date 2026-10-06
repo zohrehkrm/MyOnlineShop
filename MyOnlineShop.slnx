@@ -133,16 +133,32 @@
     <Project Path="src/Modules/Wallet/Presentation/MyOnlineShop.Wallet.Presentation.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MyOnlineShop.Shipping.Tests/MyOnlineShop.Shipping.Tests.csproj" />
+    <Project Path="tests/MyOnlineShop.Refund.Tests/MyOnlineShop.Refund.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Cart.Tests/MyOnlineShop.Cart.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Catalog.Tests/MyOnlineShop.Catalog.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Inventory.Tests/MyOnlineShop.Inventory.Tests.csproj" />
+    <Project Path="tests/MyOnlineShop.Messaging.Tests/MyOnlineShop.Messaging.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Order.Tests/MyOnlineShop.Order.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.PricingDiscount.Tests/MyOnlineShop.PricingDiscount.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Wallet.Tests/MyOnlineShop.Wallet.Tests.csproj" />
   </Folder>
   <Project Path="MyOnlineShop/MyOnlineShop.csproj" />
+  <Folder Name="/src/Modules/Shipping/">
+    <Project Path="src/Modules/Shipping/Contracts/MyOnlineShop.Shipping.Contracts.csproj" />
+    <Project Path="src/Modules/Shipping/Domain/MyOnlineShop.Shipping.Domain.csproj" />
+    <Project Path="src/Modules/Shipping/Application/MyOnlineShop.Shipping.Application.csproj" />
+    <Project Path="src/Modules/Shipping/Infrastructure/MyOnlineShop.Shipping.Infrastructure.csproj" />
+    <Project Path="src/Modules/Shipping/Presentation/MyOnlineShop.Shipping.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Refund/">
+    <Project Path="src/Modules/Refund/Domain/MyOnlineShop.Refund.Domain.csproj" />
+    <Project Path="src/Modules/Refund/Contracts/MyOnlineShop.Refund.Contracts.csproj" />
+    <Project Path="src/Modules/Refund/Application/MyOnlineShop.Refund.Application.csproj" />
+    <Project Path="src/Modules/Refund/Infrastructure/MyOnlineShop.Refund.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/BuildingBlocks/">
     <Project Path="src/BuildingBlocks/Abstractions/MyOnlineShop.BuildingBlocks.Abstractions.csproj" />
     <Project Path="src/BuildingBlocks/Infrastructure/MyOnlineShop.BuildingBlocks.Infrastructure.csproj" />

@@ -124,6 +124,18 @@ namespace MyOnlineShop.Identity.Infrastructure.Persistence.Migrations
                         new
                         {
                             Key = "wallet.credit"
+                        },
+                        new
+                        {
+                            Key = "shipping.methods.manage"
+                        },
+                        new
+                        {
+                            Key = "shipping.shipments.manage"
+                        },
+                        new
+                        {
+                            Key = "shipping.shipments.view"
                         });
                 });
 
@@ -303,6 +315,21 @@ namespace MyOnlineShop.Identity.Infrastructure.Persistence.Migrations
                         {
                             RoleId = new Guid("00000000-0000-0000-0000-000000000001"),
                             PermissionKey = "wallet.credit"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            PermissionKey = "shipping.methods.manage"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            PermissionKey = "shipping.shipments.manage"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            PermissionKey = "shipping.shipments.view"
                         });
                 });
 

@@ -29,6 +29,8 @@ public static class DependencyInjection
         services.AddScoped<IOrderReadStore, OrderReadStore>();
         services.AddScoped<IOrderQueries>(provider => provider.GetRequiredService<IOrderReadStore>());
         services.AddScoped<IOrderCommands, OrderCommands>(); services.AddScoped<ICheckoutCommands, CheckoutCommands>();
+        services.AddScoped<IOrderRefundSnapshots, OrderRefundSnapshots>();
+        services.AddScoped<IOrderShippingSnapshots, OrderShippingSnapshots>();
         return services;
     }
 }

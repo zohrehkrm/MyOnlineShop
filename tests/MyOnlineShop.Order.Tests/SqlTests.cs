@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyOnlineShop.BuildingBlocks.Abstractions;
 using MyOnlineShop.BuildingBlocks.Infrastructure;
+using MyOnlineShop.BuildingBlocks.Infrastructure.Messaging;
+using MyOnlineShop.BuildingBlocks.Abstractions.Messaging;
 using MyOnlineShop.Cart.Contracts;
 using MyOnlineShop.Cart.Infrastructure;
 using MyOnlineShop.Cart.Infrastructure.Persistence;
@@ -54,7 +56,7 @@ public sealed class OrderSqlFixture : IAsyncLifetime
         services.AddSingleton<ICatalogVariantReferences>(Catalog); services.AddSingleton<TimeProvider, FixedClock>(); services.AddScoped<IRequestContext, RequestContext>();
         Provider = services.BuildServiceProvider();
         using var scope = Provider.CreateScope(); var provider = scope.ServiceProvider;
-        foreach (var db in new DbContext[] { provider.GetRequiredService<CartDbContext>(), provider.GetRequiredService<PricingDbContext>(),
+        foreach (var db in new DbContext[] { provider.GetRequiredService<MessagingDbContext>(), provider.GetRequiredService<CartDbContext>(), provider.GetRequiredService<PricingDbContext>(),
             provider.GetRequiredService<DiscountDbContext>(), provider.GetRequiredService<InventoryDbContext>(), provider.GetRequiredService<OrderDbContext>() })
             await db.Database.MigrateAsync();
         await MemoryModules.SeedAsync(provider, Catalog, second: true);
@@ -89,6 +91,8 @@ public sealed class SqlTests(OrderSqlFixture fixture) : IClassFixture<OrderSqlFi
         using var scope = fixture.Provider.CreateScope(); var provider = scope.ServiceProvider;
         var stored = await provider.GetRequiredService<IOrderQueries>().GetMyAsync(user, order.Id, default);
         Assert.Equal(order.Id, stored.Id); Assert.Equal("Original Product", stored.Items.Single().ProductName);
+        var message = await provider.GetRequiredService<MessagingDbContext>().Outbox.SingleAsync(value => value.Id == order.Id);
+        Assert.Equal("Pending", message.Status); Assert.Equal("orders.created", message.EventType);
         Assert.Empty((await provider.GetRequiredService<ICartQueries>().GetCurrentAsync(user, default)).Items);
         var inventory = provider.GetRequiredService<InventoryDbContext>();
         Assert.Equal(5, (await inventory.Stocks.AsNoTracking().SingleAsync(value => value.ProductVariantId == fixture.Catalog.Id)).Quantity);
@@ -117,11 +121,13 @@ public sealed class SqlTests(OrderSqlFixture fixture) : IClassFixture<OrderSqlFi
             var snapshot = await cart.GetAsync(user, ct);
             await cart.ClearAsync(user, original.Id!.Value, snapshot.Revision, ct);
             var order = OrderTests.Create(); insertedId = order.Id; db.Orders.Add(order); await db.SaveChangesAsync(ct);
+            await provider.GetRequiredService<IOutboxWriter>().EnqueueAsync(new OrderCreatedIntegrationEventV1(insertedId, FixedClock.Now, insertedId, order.PayableAmount, order.Currency), "rollback", ct);
             Assert.Same(db.Database.GetDbConnection(), provider.GetRequiredService<CartDbContext>().Database.GetDbConnection());
             Assert.Equal(Guid.Empty, System.Transactions.Transaction.Current?.TransactionInformation.DistributedIdentifier ?? Guid.Empty);
             throw new InvalidOperationException("Injected failure after both module flushes.");
         }, default));
         db.ChangeTracker.Clear(); Assert.False(await db.Orders.AnyAsync(value => value.Id == insertedId));
+        Assert.False(await provider.GetRequiredService<MessagingDbContext>().Outbox.AnyAsync(value => value.Id == insertedId));
         var restored = await provider.GetRequiredService<ICartQueries>().GetCurrentAsync(user, default);
         Assert.Equal(2, restored.Items.Single().Quantity);
     }

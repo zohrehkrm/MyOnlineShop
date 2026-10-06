@@ -25,7 +25,9 @@ public sealed class ModelTests
     {
         const string connection = "Server=localhost;Database=OrderOffline;Integrated Security=True";
         using var db = new OrderDbContext(new DbContextOptionsBuilder<OrderDbContext>().UseSqlServer(connection).AddInterceptors(new BlockConnection()).Options);
-        Assert.Single(db.Database.GetMigrations()); Assert.All(db.Model.GetEntityTypes(), entity => Assert.Equal("ordering", entity.GetSchema()));
+        Assert.Contains(db.Database.GetMigrations(), value => value.EndsWith("_InitialOrder", StringComparison.Ordinal));
+        Assert.Contains(db.Database.GetMigrations(), value => value.EndsWith("_AddOrderShipping", StringComparison.Ordinal));
+        Assert.All(db.Model.GetEntityTypes(), entity => Assert.Equal("ordering", entity.GetSchema()));
         var sql = db.GetService<IMigrator>().GenerateScript(options: MigrationsSqlGenerationOptions.Idempotent);
         Assert.Contains("decimal(18,4)", sql); Assert.Contains("rowversion", sql);
         Assert.Contains("CREATE UNIQUE INDEX [IX_Orders_UserId_IdempotencyKey]", sql);
@@ -45,7 +47,8 @@ public sealed class ModelTests
     {
         var application = typeof(MyOnlineShop.Order.Application.CheckoutCommands).Assembly;
         Assert.DoesNotContain(application.GetReferencedAssemblies(), value => value.Name!.Contains("Infrastructure") || value.Name.Contains("Presentation") ||
-            value.Name.Contains("Payment") || value.Name.Contains("Wallet") || value.Name.Contains("Shipping"));
+            value.Name.Contains("Payment") || value.Name.Contains("Wallet") || value.Name.Contains("Shipping") && !value.Name.EndsWith(".Contracts", StringComparison.Ordinal));
+        Assert.Contains(application.GetReferencedAssemblies(), value => value.Name == "MyOnlineShop.Shipping.Contracts");
         Assert.DoesNotContain(typeof(OrderAggregate).GetProperties(), property => property.PropertyType == typeof(float) || property.PropertyType == typeof(double));
         Assert.DoesNotContain(typeof(OrderItem).GetProperties(), property => property.PropertyType == typeof(float) || property.PropertyType == typeof(double));
     }

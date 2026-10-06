@@ -9,6 +9,9 @@ using MyOnlineShop.Pricing.Presentation;
 using MyOnlineShop.Discount.Presentation;
 using MyOnlineShop.Order.Presentation;
 using MyOnlineShop.Wallet.Presentation;
+using MyOnlineShop.BuildingBlocks.Infrastructure.Messaging;
+using MyOnlineShop.Refund.Infrastructure;
+using MyOnlineShop.Shipping.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -28,6 +31,14 @@ builder.Services.AddPricingModule(builder.Configuration);
 builder.Services.AddDiscountModule(builder.Configuration);
 builder.Services.AddOrderModule(builder.Configuration);
 builder.Services.AddWalletModule(builder.Configuration);
+builder.Services.AddRefundInfrastructure(builder.Configuration);
+builder.Services.AddShippingModule(builder.Configuration);
+builder.Services.AddMessagingWorkers(builder.Configuration);
+builder.Services.AddScoped<IRequestContext>(provider =>
+{
+    var message = provider.GetRequiredService<MessageRequestContext>();
+    return string.IsNullOrEmpty(message.CorrelationId) ? new HttpRequestContext(provider.GetRequiredService<IHttpContextAccessor>()) : message;
+});
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

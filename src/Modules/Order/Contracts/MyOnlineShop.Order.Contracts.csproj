@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../Shipping/Contracts/MyOnlineShop.Shipping.Contracts.csproj" />
 
 
   </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../../BuildingBlocks/Abstractions/MyOnlineShop.BuildingBlocks.Abstractions.csproj" /></ItemGroup>
 </Project>
