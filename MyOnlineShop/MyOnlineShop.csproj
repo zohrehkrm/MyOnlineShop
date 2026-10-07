@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../src/Modules/Reporting/Presentation/MyOnlineShop.Reporting.Presentation.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
     <!-- Compatible security fix for the OpenAPI dependency. -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />

@@ -1,3 +1,4 @@
+using MyOnlineShop.Reporting.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IOrderCommands, OrderCommands>(); services.AddScoped<ICheckoutCommands, CheckoutCommands>();
         services.AddScoped<IOrderRefundSnapshots, OrderRefundSnapshots>();
         services.AddScoped<IOrderShippingSnapshots, OrderShippingSnapshots>();
+        services.AddScoped<IOrderReportSource, OrderReporting>();
         return services;
     }
 }

@@ -137,6 +137,7 @@
     <Project Path="tests/MyOnlineShop.Refund.Tests/MyOnlineShop.Refund.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Cart.Tests/MyOnlineShop.Cart.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Caching.Tests/MyOnlineShop.Caching.Tests.csproj" />
+    <Project Path="tests/MyOnlineShop.Reporting.Tests/MyOnlineShop.Reporting.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Catalog.Tests/MyOnlineShop.Catalog.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Foundation.Tests/MyOnlineShop.Foundation.Tests.csproj" />
     <Project Path="tests/MyOnlineShop.Identity.Tests/MyOnlineShop.Identity.Tests.csproj" />
@@ -147,6 +148,12 @@
     <Project Path="tests/MyOnlineShop.Wallet.Tests/MyOnlineShop.Wallet.Tests.csproj" />
   </Folder>
   <Project Path="MyOnlineShop/MyOnlineShop.csproj" />
+  <Folder Name="/src/Modules/Reporting/">
+    <Project Path="src/Modules/Reporting/Contracts/MyOnlineShop.Reporting.Contracts.csproj" />
+    <Project Path="src/Modules/Reporting/Application/MyOnlineShop.Reporting.Application.csproj" />
+    <Project Path="src/Modules/Reporting/Infrastructure/MyOnlineShop.Reporting.Infrastructure.csproj" />
+    <Project Path="src/Modules/Reporting/Presentation/MyOnlineShop.Reporting.Presentation.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Shipping/">
     <Project Path="src/Modules/Shipping/Contracts/MyOnlineShop.Shipping.Contracts.csproj" />
     <Project Path="src/Modules/Shipping/Domain/MyOnlineShop.Shipping.Domain.csproj" />

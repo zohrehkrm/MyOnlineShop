@@ -1,3 +1,4 @@
+using MyOnlineShop.Reporting.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IShippingStore, ShippingStore>(); services.AddScoped<IShippingUnitOfWork, ShippingUnitOfWork>();
         services.AddScoped<IShippingCommands, ShippingCommands>(); services.AddScoped<IShippingQueries, ShippingQueries>(); services.AddScoped<IShippingQuotes, ShippingQuotes>();
+        services.AddScoped<IShippingReportSource, ShippingReporting>();
         return services;
     }
 }

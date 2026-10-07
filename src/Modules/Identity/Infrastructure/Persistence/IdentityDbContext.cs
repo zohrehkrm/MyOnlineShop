@@ -28,7 +28,9 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             new { Key = IdentityPermissions.ReceiveInventory }, new { Key = IdentityPermissions.AdjustInventory },
             new { Key = IdentityPermissions.DeductInventory }, new { Key = IdentityPermissions.ManagePricing }, new { Key = IdentityPermissions.ManageDiscount },
             new { Key = IdentityPermissions.ViewOrders }, new { Key = IdentityPermissions.ManageOrders }, new { Key = IdentityPermissions.CreditWallet },
-            new { Key = IdentityPermissions.ManageShippingMethods }, new { Key = IdentityPermissions.ManageShipments }, new { Key = IdentityPermissions.ViewShipments });
+            new { Key = IdentityPermissions.ManageShippingMethods }, new { Key = IdentityPermissions.ManageShipments }, new { Key = IdentityPermissions.ViewShipments },
+            new { Key = IdentityPermissions.ViewReports }, new { Key = IdentityPermissions.ReportSales }, new { Key = IdentityPermissions.ReportInventory },
+            new { Key = IdentityPermissions.ReportCustomers }, new { Key = IdentityPermissions.ReportFinancial });
         modelBuilder.Entity<RolePermission>().HasData(
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageUsers },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageRoles },
@@ -44,7 +46,12 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.CreditWallet },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageShippingMethods },
             new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ManageShipments },
-            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ViewShipments });
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ViewShipments },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ViewReports },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ReportSales },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ReportInventory },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ReportCustomers },
+            new { RoleId = IdentityPermissions.AdministratorRoleId, PermissionKey = IdentityPermissions.ReportFinancial });
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

@@ -1,3 +1,4 @@
+using MyOnlineShop.Reporting.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<IWalletStore, WalletStore>(); services.AddScoped<IWalletUnitOfWork, WalletUnitOfWork>();
         services.AddScoped<IWalletQueries, WalletReadStore>(); services.AddScoped<IWalletOperations, WalletOperations>();
         services.AddScoped<IWalletAdministration, WalletAdministration>();
+        services.AddScoped<IWalletReportSource, WalletReporting>();
         return services;
     }
 }

@@ -12,6 +12,7 @@ using MyOnlineShop.Wallet.Presentation;
 using MyOnlineShop.BuildingBlocks.Infrastructure.Messaging;
 using MyOnlineShop.Refund.Infrastructure;
 using MyOnlineShop.Shipping.Presentation;
+using MyOnlineShop.Reporting.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
@@ -33,6 +34,7 @@ builder.Services.AddOrderModule(builder.Configuration);
 builder.Services.AddWalletModule(builder.Configuration);
 builder.Services.AddRefundInfrastructure(builder.Configuration);
 builder.Services.AddShippingModule(builder.Configuration);
+builder.Services.AddReportingModule();
 builder.Services.AddMessagingWorkers(builder.Configuration);
 builder.Services.AddScoped<IRequestContext>(provider =>
 {

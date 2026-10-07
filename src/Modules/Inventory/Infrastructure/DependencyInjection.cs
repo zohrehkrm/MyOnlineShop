@@ -1,3 +1,4 @@
+using MyOnlineShop.Reporting.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryDeduction>(provider => provider.GetRequiredService<InventoryCommands>());
         services.AddScoped<IMessageConsumer, PaymentSucceededConsumer>();
         services.AddScoped<ILocalSqlTransactionParticipant>(provider => new LocalSqlTransactionParticipant<InventoryDbContext>(provider.GetRequiredService<InventoryDbContext>(), "inventory"));
+        services.AddScoped<IInventoryReportSource, InventoryReporting>();
         return services;
     }
 }

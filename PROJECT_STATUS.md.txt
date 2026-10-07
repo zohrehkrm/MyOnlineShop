@@ -2,14 +2,21 @@
 
 ## Current Phase
 
-Phase 13 — Redis & Caching
+Phase 14 — Reporting
 
 ## Status
 
-Complete under infrastructure-free validation; live Redis and SQL cache-invalidation runtime checks remain deferred — 2026-10-06
+Complete under infrastructure-free validation; live SQL reporting execution/plan checks and unavailable Payment reports remain deferred
 
 ## Completed
 
+* Reporting Contracts/Application/Infrastructure/Presentation projects and explicit owner-implemented read ports; no duplicate business tables or write commands
+* Administrative dashboard, currency-separated sales/day/month, paginated Orders and historical variant sales reports
+* Current stock/low-stock and movement aggregates, Customer-role registrations and buyer spending, posted Wallet ledger and Shipping summaries
+* Server-side aggregates, AsNoTracking projections, validated UTC date windows, stable pagination and decimal monetary handling
+* Explicit report permissions reuse Identity; additive AddReportingPermissions migration and forward SQL reviewed offline, not applied
+* Phase 14 available tests and regression suite passed; two read-only SQL integration tests compiled and skipped
+* Reporting definitions, authorization, owner boundaries, performance and unavailable reports documented in REPORTING.md
 * Optional Redis infrastructure, shared ICacheService, validated configuration/DI, versioned DTO serialization and bounded failure fallback
 * Catalog product/category/brand details, Pricing/Discount record lookups and active Shipping method DTO caches
 * Post-commit module generation invalidation, absolute TTL, payload limits and bounded process-local stampede protection
@@ -155,7 +162,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 13 is complete under available infrastructure-free validation. Live Redis and SQL invalidation runtime checks remain deferred. Phase 8 remains absent; Phase 11 production refunds and true verified-payment fulfillment remain blocked by missing payment evidence. Phase 14 was not started.
+None. Phase 14 is complete under available infrastructure-free validation. Live SQL execution/plans remain deferred. Phase 8 is absent, so verified-payment reports and Phase 11 production refunds remain blocked. Phase 15 was not started.
 
 ## Completed Phases
 
@@ -173,13 +180,16 @@ None. Phase 13 is complete under available infrastructure-free validation. Live 
 * [x] Phase 11 — Refund Processing (foundation; Phase 8 production integration blocked)
 * [x] Phase 12 — Shipping
 * [x] Phase 13 — Redis & Caching
-* [ ] Phase 14 — Reporting
+* [x] Phase 14 — Reporting
 * [ ] Phase 15 — Admin & Warehouse APIs
 * [ ] Phase 16 — Testing & Hardening
 * [ ] Phase 17 — Docker & Documentation
 
 ## Known Issues
 
+* Payment entities/receipts/status/gateway data remain absent: no payment report endpoint or payment-status filtering was fabricated. Sales report immutable Order value for current Paid/Processing/Shipped/Completed statuses by creation-date cohort, not verified payment settlement or net refunded revenue.
+* Historical OrderItem snapshots lack parent ProductId/CategoryId. Product sales are supported by variant ID/currency; historical parent/category rollups and refunded-order counts are unavailable rather than inferred from mutable Catalog or missing payment/refund associations.
+* Reporting SQL execution/plan/isolation behavior is unverified against a live server. Two read-only SQL tests are compiled/skipped. Offline aggregate/pagination translation and explicit EF InMemory behavior passed; no speculative performance index was added. Independent report queries are not a cross-module point-in-time snapshot.
 * Live Redis round-trip/expiry/removal is implemented but skipped without REDIS_TEST_CONNECTION_STRING. SQL post-commit invalidation is reviewed and its success/failure control flow is tested using explicit EF InMemory; actual SQL transaction/runtime verification remains deferred.
 * Cache invalidation is best effort after SQL commit. Redis outage, process termination between commit/invalidation or direct SQL edits can leave cached display/management DTOs stale until absolute TTL (default two minutes, configured maximum ten). Financial calculations and critical eligibility reads bypass these caches.
 * Shipping SQL persistence, native rowversion conflicts, concurrent creation/transition, uniqueness and flushed audit rollback remain unverified against live SQL Server. Five implemented Shipping SQL tests are explicitly skipped.
@@ -525,6 +535,22 @@ Important integration events use Transactional Outbox before RabbitMQ publicatio
 * Skips: 60 SQL-dependent tests, 1 RabbitMQ test, 1 Redis integration test, 3 true Payment E2E tests blocked by missing Phase 8. Infrastructure connection variables were cleared before the full suite. Tests compiled; no SQL Server, LocalDB, RabbitMQ, Redis or Docker was installed, started or contacted.
 * Cache tests verify keys, serialization/DTOs, hit/miss, absolute expiry, invalidation isolation, stale in-flight fills, local stampede protection, unavailable Redis fallback/cooldown/recovery, bounded timeout, cancellation, malformed/oversized payloads, disabled startup, Catalog visibility and production commit-hook success/failure control flow. Module tests prove fresh price/discount eligibility/shipping calculations despite stale display DTOs. EF InMemory tests do not claim SQL transaction correctness.
 
+### Reporting
+
+* Phase 14 completed under infrastructure-free validation. Four Reporting projects provide contracts, application query handlers, infrastructure registration and thin GET controllers. No Domain commands, Reporting DbContext, duplicate tables or business ownership are introduced.
+* Order, Inventory, Identity, Catalog, Wallet and Shipping implement explicit Reporting.Contracts read ports inside their own Infrastructure. Reporting has no dependency on their internals and never crosses module contexts/tables directly. Pricing is used only for existing currency validation; historical sales never use current prices or Redis.
+* Implemented GET /api/v1/reports/dashboard, sales, orders, products, inventory, customers, wallet and shipping. Dashboard combines existing owner counts; sales use currency-separated historical Order money and daily/monthly creation cohorts; products group historical OrderItems by variant/currency. Detail/group lists are bounded and paginated.
+* Current stock and distinct low-stock variants respect active stock/warehouse thresholds; movement aggregates retain signed additions/deductions by warehouse/type/date. Customer registrations use the current Customer role and activation state; buyer spending exposes only operational IDs/currency. Wallet totals use posted ledger credit/debit signs with an exact InventoryRefund credit subtotal. Shipping uses actual persisted status/method counts without mutation.
+* All endpoints require reports.view plus their scoped permission. Dashboard combines sales/inventory/customer permissions; customer spending requires customer and sales permissions; Wallet requires reports.financial; Shipping reuses shipping.shipments.view. Administrator role names alone never bypass permissions. No authentication/profile/address/secret data or exports are exposed.
+* Added only five reporting permission definitions/seeds and administrator grants in Identity. AddReportingPermissions and artifacts/Phase14ReportingPermissions.sql were generated/reviewed offline; the migration Up inserts permission/grant rows only. Snapshot/model agreement passed. No migration was applied and no persistent database was modified.
+* UTC half-open intervals default to the previous 30 days and are bounded to 366 days; offsets normalize to UTC. Status/currency/bucket and page/size/offset validation reject invalid input, including earliest-date default-window underflow. Date and cancellation tests passed. Data groups never mix currencies or convert financial truth to floating-point.
+* Server-side WHERE/GROUP BY/COUNT_BIG/SUM/AVG, AsNoTracking, DTO projections and stable Skip/Take avoid full-table application materialization, tracking, Includes and N+1 lookups. Offline SQL translation verifies Order sales/timeline/variants/buyers, Inventory movements and Wallet aggregates. Existing owner indexes are retained; live execution-plan profiling must precede additional indexes. Reports bypass Redis and make no writes/events.
+* Unavailable: verified Payment summaries/status/gateway/settlement and payment-status filters because Phase 8 is absent; historical parent-product/category rollups because OrderItem lacks parent/category snapshots; refunded-order counts without a reliable association/state. Dashboard exposes PaymentReportsAvailable=false and the Order-status sales basis. No Payment functionality was implemented or simulated. Delivery-duration/historical stock/export extensions remain deferred.
+* Initial and final affected API builds passed with zero warnings/errors. The complete available suite passed 268 tests with 67 skips; after a final date-boundary guard and cancellation test, the focused Reporting suite passed 29 tests / 2 skips. Final unique available-suite outcome: 269 passed, 0 failed, 67 skipped. Unchanged passing suites were not unnecessarily repeated.
+* Final suite breakdown (passed/skipped): Reporting 29/2; Caching 19/1; Cart 13/5; Catalog 27/0; Foundation 15/1; Identity 23/13; Inventory 15/8; Messaging 10/9; Order 25/5; PricingDiscount 35/5; Refund 20/6; Shipping 18/6; Wallet 20/6.
+* Skips: 62 SQL-dependent tests, 1 RabbitMQ test, 1 Redis test and 3 true Payment E2E tests blocked by missing Phase 8. Reporting SQL tests compile and read only an already migrated database when explicitly enabled later. All infrastructure test connection variables were cleared before the regression run. No SQL Server, LocalDB, RabbitMQ, Redis or Docker was installed, started or contacted.
+* REPORTING.md records DTO definitions, filters, UTC/money semantics, per-endpoint permissions, dependency direction, migration safety, indexing limits and unavailable reports. Independent query reads are administrative snapshots, not a single consistent cross-module transaction. Phase 15 and later work were not started.
+
 ## Next Phase
 
-Phase 14 — Reporting (not started; requires a new user request). Phase 8 Payment remains unimplemented; its producer, paid Order integration and authoritative refund evidence remain pending. Live Redis, SQL Server/RabbitMQ runtime and true Payment E2E validation remain deferred. Phase 13 did not implement any later phase.
+Phase 15 — Admin & Warehouse APIs (not started; requires a new user request). Phase 8 Payment remains unimplemented, including verified payment reporting, the producer/paid Order integration and authoritative refund evidence. Live SQL reporting/execution-plan checks, Redis/RabbitMQ runtime and true Payment E2E validation remain deferred. Phase 14 did not implement any later phase.

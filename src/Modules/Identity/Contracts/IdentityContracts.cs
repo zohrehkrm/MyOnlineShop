@@ -15,6 +15,11 @@ public static class IdentityPermissions
     public const string ManageShippingMethods = "shipping.methods.manage";
     public const string ManageShipments = "shipping.shipments.manage";
     public const string ViewShipments = "shipping.shipments.view";
+    public const string ViewReports = "reports.view";
+    public const string ReportSales = "reports.sales";
+    public const string ReportInventory = "reports.inventory";
+    public const string ReportCustomers = "reports.customers";
+    public const string ReportFinancial = "reports.financial";
     public const string ViewInventory = "inventory.view";
     public const string ReceiveInventory = "inventory.receive";
     public const string AdjustInventory = "inventory.adjust";

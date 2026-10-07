@@ -1,3 +1,4 @@
+using MyOnlineShop.Reporting.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<ProductCommands>();
         services.AddScoped<ICatalogCommands, CatalogCommands>();
         services.AddScoped<ICatalogQueries, CatalogQueries>();
+        services.AddScoped<ICatalogReportSource, CatalogReporting>();
         return services;
     }
 }

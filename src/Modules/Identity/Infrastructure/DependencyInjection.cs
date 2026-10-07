@@ -1,3 +1,4 @@
+using MyOnlineShop.Reporting.Contracts;
 using System.Security.Claims;
 using System.Globalization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -107,6 +108,7 @@ public static class DependencyInjection
                     }
                 };
             });
+        services.AddScoped<ICustomerReportSource, CustomerReporting>();
         return services;
     }
 
