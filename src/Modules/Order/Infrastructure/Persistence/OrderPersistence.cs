@@ -79,6 +79,20 @@ public sealed class OrderReadStore(OrderDbContext context) : IOrderReadStore
     public Task<OrderPage> ListMyAsync(Guid userId, int page, int size, CancellationToken ct)
     { OrderException.User(userId); return PageAsync(context.Orders.Where(value => value.UserId == userId), page, size, ct); }
     public Task<OrderPage> ListAsync(int page, int size, CancellationToken ct) => PageAsync(context.Orders, page, size, ct);
+    public Task<OrderPage> ListAsync(OrderListQuery query, CancellationToken ct)
+    {
+        var values = context.Orders.AsNoTracking();
+        if (query.FromUtc is { } from && query.ToUtc is { } to && from >= to) throw OrderException.Invalid("FromUtc must precede exclusive ToUtc.");
+        if (query.Status is not null)
+        {
+            if (!Enum.TryParse<OrderStatus>(query.Status, false, out var status) || !Enum.IsDefined(status) || status.ToString() != query.Status)
+                throw OrderException.Invalid("Order status is invalid.");
+            values = values.Where(value => value.Status == status);
+        }
+        if (query.FromUtc is not null) { var fromUtc = query.FromUtc.Value.ToUniversalTime(); values = values.Where(value => value.CreatedAtUtc >= fromUtc); }
+        if (query.ToUtc is not null) { var toUtc = query.ToUtc.Value.ToUniversalTime(); values = values.Where(value => value.CreatedAtUtc < toUtc); }
+        return PageAsync(values, query.Page, query.PageSize, ct);
+    }
     private static async Task<OrderPage> PageAsync(IQueryable<OrderAggregate> query, int page, int size, CancellationToken ct)
     {
         if (page < 1 || size is < 1 or > 100 || ((long)page - 1) * size > int.MaxValue) throw OrderException.Invalid();

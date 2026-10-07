@@ -2,14 +2,19 @@
 
 ## Current Phase
 
-Phase 14 — Reporting
+Phase 15 — Admin & Warehouse APIs
 
 ## Status
 
-Complete under infrastructure-free validation; live SQL reporting execution/plan checks and unavailable Payment reports remain deferred
+Complete under infrastructure-free validation; live SQL concurrency/transactions and missing Phase 8 Payment integration remain deferred
 
 ## Completed
 
+* Phase 15 reused existing module-owned administrative APIs, commands/queries and Identity permissions without duplicating business workflows
+* Order management status/UTC date filters, paginated shipment management summaries and Inventory adjustment history with date filters
+* Safe structured Catalog and warehouse/stock-setting administration audit logs from authenticated actors
+* Affected API builds passed with zero warnings/errors; final unique available-suite outcome: 283 passed, 0 failed, 67 skipped
+* Administrative API/permission map, audit limits and dependencies documented in ADMIN_WAREHOUSE.md; no Phase 15 schema or permission migration required
 * Reporting Contracts/Application/Infrastructure/Presentation projects and explicit owner-implemented read ports; no duplicate business tables or write commands
 * Administrative dashboard, currency-separated sales/day/month, paginated Orders and historical variant sales reports
 * Current stock/low-stock and movement aggregates, Customer-role registrations and buyer spending, posted Wallet ledger and Shipping summaries
@@ -162,7 +167,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 14 is complete under available infrastructure-free validation. Live SQL execution/plans remain deferred. Phase 8 is absent, so verified-payment reports and Phase 11 production refunds remain blocked. Phase 15 was not started.
+None. Phase 15 is complete under available infrastructure-free validation. Live SQL concurrency/transactions and execution plans remain deferred. Phase 8 is absent, so verified-payment integration/reporting and Phase 11 production refunds remain blocked. Phase 16 was not started.
 
 ## Completed Phases
 
@@ -181,7 +186,7 @@ None. Phase 14 is complete under available infrastructure-free validation. Live 
 * [x] Phase 12 — Shipping
 * [x] Phase 13 — Redis & Caching
 * [x] Phase 14 — Reporting
-* [ ] Phase 15 — Admin & Warehouse APIs
+* [x] Phase 15 — Admin & Warehouse APIs
 * [ ] Phase 16 — Testing & Hardening
 * [ ] Phase 17 — Docker & Documentation
 
@@ -551,6 +556,20 @@ Important integration events use Transactional Outbox before RabbitMQ publicatio
 * Skips: 62 SQL-dependent tests, 1 RabbitMQ test, 1 Redis test and 3 true Payment E2E tests blocked by missing Phase 8. Reporting SQL tests compile and read only an already migrated database when explicitly enabled later. All infrastructure test connection variables were cleared before the regression run. No SQL Server, LocalDB, RabbitMQ, Redis or Docker was installed, started or contacted.
 * REPORTING.md records DTO definitions, filters, UTC/money semantics, per-endpoint permissions, dependency direction, migration safety, indexing limits and unavailable reports. Independent query reads are administrative snapshots, not a single consistent cross-module transaction. Phase 15 and later work were not started.
 
+### Admin & Warehouse APIs
+
+* Phase 15 completed on 2026-10-07 under infrastructure-free validation. Existing modular/CQRS ownership, API envelopes/errors, correlation IDs, JWT/permission policies, application validation and transaction boundaries are preserved. No Admin module, duplicate endpoints/business logic, frontend or infrastructure deployment was added.
+* Reused Catalog product/status/category/brand/attribute/variant management and protected detail/paged search; Warehouse create/update/activation/detail/paged lists, stock settings/levels, receipts/returns/adjustments and movement history; Order detail/totals and supported cancellation/state commands; Shipping method/preparation/state/tracking/carrier commands; Pricing/Discount/coupon management; idempotent Wallet administrative credit and ledger; all supported Phase 14 reports.
+* Added status and UTC date filtering to GET /api/v1/orders/management while retaining page/pageSize compatibility and the original query overload. Added GET /api/v1/shipping/management/shipments with pagination/status/order/method/date filters and operational summary DTOs without addresses or financial totals. Added GET /api/v1/inventory/adjustments with movement-backed DTOs; receipts/movements/adjustments accept UTC date filters. Queries normalize offsets, use inclusive FromUtc/exclusive ToUtc, stable server-side pagination/counts and AsNoTracking projections. Page size is bounded to 100 and invalid status/identifier/range/offset returns 400.
+* Reused catalog.manage, inventory.view/receive/adjust, orders.view/manage, shipping.methods.manage and shipping.shipments.view/manage, pricing.manage, discount.manage, wallet.credit and existing scoped Reporting permissions. No permissions, grants or user assignments were changed. Cross-area permissions and Administrator role names do not bypass policies; actors are derived from authenticated claims rather than request fields.
+* Successful Catalog mutations log operation/server actor/target/UTC/correlation through a module-local action filter; warehouse create/update and stock-setting writes record the same safe fields after successful commands. Invalid subjects are rejected before writing. No bodies, personal data or secrets are logged. This uses Foundation structured logging, not a new transactional audit store: metadata audit retention depends on the configured sink, with a possible commit-to-log crash gap. Existing durable Inventory history, Order/Shipping audit, Pricing history, Discount updated-by and Wallet ledger/audit remain intact.
+* Receipt/adjustment/deduction atomic SQL workflows, operation idempotency, append-only movement records, quantity checks and rowversion protections were reused unchanged. No direct quantity or wallet-balance editing, Cart reservation, Redis truth, Order snapshot editing, admin Paid transition, new Payment/refund processing or carrier integration was implemented.
+* Initial and final affected API builds passed with zero warnings/errors. Focused Order and Shipping administration tests passed before regression. The full available suite passed 282 tests / 67 skips; an additional focused Inventory history fixture then passed, yielding final unique available-suite outcome 283 passed, 0 failed, 67 skipped. No unchanged passing tests were unnecessarily repeated.
+* Final suite breakdown (passed/skipped): Caching 19/1; Cart 13/5; Catalog 32/0; Foundation 15/1; Identity 23/13; Inventory 17/8; Messaging 10/9; Order 28/5; PricingDiscount 36/5; Refund 20/6; Reporting 29/2; Shipping 20/6; Wallet 21/6.
+* New focused coverage verifies administration audit fields/no sensitive payloads/invalid actor/failure behavior, duplicate API method-and-route absence, Warehouse activation/authorization and invalid adjustments, adjustment SQL translation and history filtering/receipt exclusion, Order status/date/paging/cancellation/forbidden transitions, shipment listing/privacy/filtering/policies and Pricing/Discount/Wallet permission separation. Existing Catalog management, receipt/idempotency, Shipping revision/state, financial and Reporting authorization tests also passed. EF InMemory was added only to Inventory tests and does not establish SQL transaction/concurrency correctness.
+* Skips: 62 SQL-dependent tests, 1 RabbitMQ test, 1 Redis test and 3 true Payment E2E tests blocked by missing Phase 8. Infrastructure connection variables were cleared before regression; dependent tests compiled but did not run. Offline SQL translation/model checks open no connection. No SQL Server, LocalDB, Redis, RabbitMQ or Docker was installed, started or contacted; no persistent database was modified.
+* Migration status: no model/seed changes and no Phase 15 migration needed; existing SQL Server Code First/migrations remain configured, none applied. ADMIN_WAREHOUSE.md documents routes, reused permissions, filter semantics, audit limitations and missing dependencies. Phase 8 producer/verified-payment integration, refund evidence and verified-payment reporting remain pending; Phase 16 has not started.
+
 ## Next Phase
 
-Phase 15 — Admin & Warehouse APIs (not started; requires a new user request). Phase 8 Payment remains unimplemented, including verified payment reporting, the producer/paid Order integration and authoritative refund evidence. Live SQL reporting/execution-plan checks, Redis/RabbitMQ runtime and true Payment E2E validation remain deferred. Phase 14 did not implement any later phase.
+Phase 16 — Testing & Hardening (not started; requires a new user request). Phase 8 Payment remains unimplemented, including verified payment reporting, the producer/paid Order integration and authoritative refund evidence. Live SQL concurrency/transaction/reporting checks, Redis/RabbitMQ runtime and true Payment E2E validation remain deferred. Phase 15 did not implement any later phase.

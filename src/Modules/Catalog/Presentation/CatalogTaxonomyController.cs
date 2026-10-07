@@ -7,6 +7,7 @@ using MyOnlineShop.Identity.Contracts;
 namespace MyOnlineShop.Catalog.Presentation;
 
 [ApiController, Route("api/v1/catalog")]
+[ServiceFilter(typeof(CatalogAdministrationAudit))]
 public sealed class CatalogTaxonomyController(ICatalogCommands commands, ICatalogQueries queries) : ControllerBase
 {
     private ApiResponse<T> Envelope<T>(T data) => new(data, HttpContext.TraceIdentifier);

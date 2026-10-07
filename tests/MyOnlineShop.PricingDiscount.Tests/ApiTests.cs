@@ -15,6 +15,19 @@ namespace MyOnlineShop.PricingDiscount.Tests;
 public sealed class ApiTests
 {
     [Fact]
+    public async Task Administrative_pricing_and_discount_permissions_do_not_grant_each_other()
+    {
+        using var factory = new PricingApiFactory();
+        using var pricing = factory.Client(Guid.NewGuid(), IdentityPermissions.ManagePricing);
+        using var discounts = factory.Client(Guid.NewGuid(), IdentityPermissions.ManageDiscount);
+        using var warehouse = factory.Client(Guid.NewGuid(), IdentityPermissions.AdjustInventory);
+        Assert.Equal(HttpStatusCode.Forbidden, (await pricing.PostAsJsonAsync("/api/v1/discounts", Discount())).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await discounts.PostAsJsonAsync("/api/v1/pricing/prices", Price(factory.Catalog.Id, 100))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await warehouse.GetAsync("/api/v1/discounts")).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await pricing.PostAsJsonAsync("/api/v1/pricing/prices", Price(factory.Catalog.Id, 100))).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await discounts.PostAsJsonAsync("/api/v1/discounts", Discount())).StatusCode);
+    }
+    [Fact]
     public async Task Discount_management_validates_product_and_category_references()
     {
         using var factory = new PricingApiFactory();

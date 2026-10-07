@@ -20,6 +20,14 @@ public sealed class AddressInput
     [Required, RegularExpression("^[A-Za-z]{2}$")] public string CountryCode { get; init; } = "";
 }
 public sealed class ChangeOrderStatusInput { [Required] public string Status { get; init; } = ""; }
+public sealed class OrderListQuery
+{
+    [Range(1, int.MaxValue)] public int Page { get; init; } = 1;
+    [Range(1, 100)] public int PageSize { get; init; } = 20;
+    [RegularExpression("^(Pending|AwaitingPayment|Paid|Processing|Shipped|Completed|Cancelled|Failed)$")] public string? Status { get; init; }
+    public DateTimeOffset? FromUtc { get; init; }
+    public DateTimeOffset? ToUtc { get; init; }
+}
 public sealed record AddressDto(string Recipient, string Street, string City, string PostalCode, string CountryCode);
 public sealed record OrderItemDto(Guid Id, Guid ProductVariantId, string Sku, string ProductName, string ProductKind,
     Guid PriceId, Guid? DiscountId, decimal UnitPrice, decimal UnitDiscount, decimal DiscountAmount, decimal FinalUnitPrice, int Quantity, decimal LineTotal);
@@ -41,4 +49,5 @@ public interface IOrderQueries
     Task<OrderPage> ListMyAsync(Guid userId, int page, int pageSize, CancellationToken ct);
     Task<OrderDto> GetAsync(Guid orderId, CancellationToken ct);
     Task<OrderPage> ListAsync(int page, int pageSize, CancellationToken ct);
+    Task<OrderPage> ListAsync(OrderListQuery query, CancellationToken ct);
 }

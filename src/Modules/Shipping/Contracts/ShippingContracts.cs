@@ -73,6 +73,19 @@ public sealed record ShippingMethodDto(Guid Id, string Name, string Code, string
 public sealed record ShipmentDto(Guid Id, Guid OrderId, Guid ShippingMethodId, string MethodName, string MethodCode,
     ShippingAddressDto Address, decimal ShippingCost, string Currency, string Status, string? TrackingNumber, string? Carrier,
     DateTimeOffset CreatedAtUtc, DateTimeOffset? ShippedAtUtc, DateTimeOffset? DeliveredAtUtc, Guid Revision);
+public sealed class ShipmentListQuery
+{
+    [Range(1, int.MaxValue)] public int Page { get; init; } = 1;
+    [Range(1, 100)] public int PageSize { get; init; } = 20;
+    [RegularExpression("^(Pending|Preparing|Shipped|InTransit|Delivered|Cancelled)$")] public string? Status { get; init; }
+    public Guid? OrderId { get; init; }
+    public Guid? ShippingMethodId { get; init; }
+    public DateTimeOffset? FromUtc { get; init; }
+    public DateTimeOffset? ToUtc { get; init; }
+}
+public sealed record ShipmentSummaryDto(Guid Id, Guid OrderId, Guid ShippingMethodId, string MethodName, string Status,
+    string? TrackingNumber, string? Carrier, DateTimeOffset CreatedAtUtc, Guid Revision);
+public sealed record ShipmentPage(IReadOnlyList<ShipmentSummaryDto> Items, int Page, int PageSize, int TotalCount);
 public interface IShippingCommands
 {
     Task<ShippingMethodDto> CreateMethodAsync(Guid actor, ShippingMethodInput input, CancellationToken ct);
@@ -87,4 +100,5 @@ public interface IShippingQueries
     Task<IReadOnlyList<ShippingMethodDto>> MethodsAsync(CancellationToken ct);
     Task<ShipmentDto> GetMyOrderAsync(Guid userId, Guid orderId, CancellationToken ct);
     Task<ShipmentDto> GetAsync(Guid id, CancellationToken ct);
+    Task<ShipmentPage> ListAsync(ShipmentListQuery query, CancellationToken ct);
 }

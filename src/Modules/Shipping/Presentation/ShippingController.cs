@@ -40,6 +40,8 @@ public sealed class ShippingController(IShippingCommands commands, IShippingQuer
     }
     [HttpGet("management/shipments/{id:guid}"), Authorize(Policy = IdentityPermissions.ViewShipments)]
     public async Task<IActionResult> Shipment(Guid id, CancellationToken ct) => Ok(Envelope(await queries.GetAsync(id, ct)));
+    [HttpGet("management/shipments"), Authorize(Policy = IdentityPermissions.ViewShipments)]
+    public async Task<IActionResult> Shipments([FromQuery] ShipmentListQuery query, CancellationToken ct) => Ok(Envelope(await queries.ListAsync(query, ct)));
     [HttpPatch("management/shipments/{id:guid}/status"), Authorize(Policy = IdentityPermissions.ManageShipments)]
     public async Task<IActionResult> Status(Guid id, ShipmentStatusInput input, CancellationToken ct) =>
         Ok(Envelope(await commands.ChangeStatusAsync(Actor, id, input, ct)));

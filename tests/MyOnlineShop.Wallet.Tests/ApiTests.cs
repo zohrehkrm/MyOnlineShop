@@ -55,6 +55,20 @@ internal sealed class WalletAuthentication(IOptionsMonitor<AuthenticationSchemeO
 public sealed class ApiTests
 {
     [Fact]
+    public async Task Other_administrative_permissions_cannot_credit_wallet_and_invalid_actor_is_rejected()
+    {
+        using var factory = new WalletApiFactory();
+        var route = $"/api/v1/admin/wallets/{factory.Identity.User}/credit";
+        var body = new { IdempotencyKey = Guid.NewGuid(), Amount = 100m, Currency = "IRR", Description = "Adjustment" };
+        foreach (var permission in new[] { IdentityPermissions.ManageCatalog, IdentityPermissions.AdjustInventory, IdentityPermissions.ManageOrders, IdentityPermissions.ReportFinancial })
+        {
+            using var client = factory.Client(Guid.NewGuid(), permission);
+            Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsJsonAsync(route, body)).StatusCode);
+        }
+        using var invalid = factory.Client(Guid.Empty, IdentityPermissions.CreditWallet);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await invalid.PostAsJsonAsync(route, body)).StatusCode);
+    }
+    [Fact]
     public async Task Only_permission_protected_admin_credit_is_exposed_and_server_controls_financial_fields()
     {
         using var factory = new WalletApiFactory(); var owner = factory.Identity.User; var actor = Guid.NewGuid();

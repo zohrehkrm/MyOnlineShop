@@ -62,6 +62,27 @@ public sealed class ShippingQueries(ShippingDbContext db, IOrderShippingSnapshot
     }
     public async Task<ShipmentDto> GetAsync(Guid id, CancellationToken ct) =>
         await Detail(db.Shipments.Where(value => value.Id == id)).SingleOrDefaultAsync(ct) ?? throw ShippingException.NotFound();
+    public async Task<ShipmentPage> ListAsync(ShipmentListQuery query, CancellationToken ct)
+    {
+        if (query.Page < 1 || query.PageSize is < 1 or > 100 || ((long)query.Page - 1) * query.PageSize > int.MaxValue ||
+            query.OrderId == Guid.Empty || query.ShippingMethodId == Guid.Empty ||
+            (query.FromUtc is { } from && query.ToUtc is { } to && from >= to)) throw ShippingException.Invalid();
+        var values = db.Shipments.AsNoTracking();
+        if (query.Status is not null)
+        {
+            if (!Enum.TryParse<ShipmentStatus>(query.Status, false, out var status) || !Enum.IsDefined(status) || status.ToString() != query.Status) throw ShippingException.Invalid();
+            values = values.Where(value => value.Status == status);
+        }
+        if (query.OrderId is not null) values = values.Where(value => value.OrderId == query.OrderId);
+        if (query.ShippingMethodId is not null) values = values.Where(value => value.ShippingMethodId == query.ShippingMethodId);
+        if (query.FromUtc is not null) { var fromUtc = query.FromUtc.Value.ToUniversalTime(); values = values.Where(value => value.CreatedAtUtc >= fromUtc); }
+        if (query.ToUtc is not null) { var toUtc = query.ToUtc.Value.ToUniversalTime(); values = values.Where(value => value.CreatedAtUtc < toUtc); }
+        var total = await values.CountAsync(ct);
+        var items = await values.OrderByDescending(value => value.CreatedAtUtc).ThenBy(value => value.Id).Skip((query.Page - 1) * query.PageSize).Take(query.PageSize)
+            .Select(value => new ShipmentSummaryDto(value.Id, value.OrderId, value.ShippingMethodId, value.MethodName, value.Status.ToString(),
+                value.TrackingNumber, value.Carrier, value.CreatedAtUtc, value.Revision)).ToListAsync(ct);
+        return new(items, query.Page, query.PageSize, total);
+    }
     private static IQueryable<ShipmentDto> Detail(IQueryable<Shipment> query) => query.AsNoTracking().Select(value => new ShipmentDto(value.Id, value.OrderId,
         value.ShippingMethodId, value.MethodName, value.MethodCode, value.Address, value.ShippingCost, value.Currency, value.Status.ToString(),
         value.TrackingNumber, value.Carrier, value.CreatedAtUtc, value.ShippedAtUtc, value.DeliveredAtUtc, value.Revision));

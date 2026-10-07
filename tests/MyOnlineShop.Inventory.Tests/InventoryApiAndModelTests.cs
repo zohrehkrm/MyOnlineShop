@@ -166,13 +166,37 @@ public sealed class InventoryApiAndModelTests
         Assert.Contains("SELECT", read.StockPage(new() { WarehouseId = id, LowStockOnly = true }).ToQueryString());
         Assert.Contains("SELECT", read.MovementPage(new() { WarehouseId = id, MovementType = "Sale" }).ToQueryString());
         Assert.Contains("SELECT", read.ReceiptPage(new() { WarehouseId = id }).ToQueryString());
+        var adjustmentSql = read.AdjustmentPage(new() { WarehouseId = id, FromUtc = DateTimeOffset.UtcNow.AddDays(-1), ToUtc = DateTimeOffset.UtcNow }).ToQueryString();
+        Assert.Contains("OFFSET", adjustmentSql); Assert.Contains("Adjustments", adjustmentSql); Assert.Contains("CreatedAtUtc", adjustmentSql);
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => query.GetWarehouseAsync(id, default));
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => query.ListWarehousesAsync(new() { IsActive = true }, default));
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => query.GetStockAsync(id, id, default));
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => query.ListStockAsync(new() { WarehouseId = id, LowStockOnly = true }, default));
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => query.ListMovementsAsync(new() { WarehouseId = id, MovementType = "Sale" }, default));
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => query.ListReceiptsAsync(new() { WarehouseId = id }, default));
+        await Assert.ThrowsAsync<OfflineConnectionRequested>(() => query.ListAdjustmentsAsync(new() { WarehouseId = id }, default));
+        await Assert.ThrowsAsync<InventoryException>(() => query.ListAdjustmentsAsync(new() { FromUtc = DateTimeOffset.UtcNow, ToUtc = DateTimeOffset.UtcNow.AddDays(-1) }, default));
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => scope.ServiceProvider.GetRequiredService<ICatalogVariantReferences>().GetAsync(id, default));
         await Assert.ThrowsAsync<OfflineConnectionRequested>(() => scope.ServiceProvider.GetRequiredService<IInventoryStore>().FindOperationAsync(id, default));
+    }
+
+    [Fact]
+    public async Task Adjustment_history_and_warehouse_updates_enforce_existing_permissions_and_rules()
+    {
+        using var factory = new InventoryApiFactory(); using var anonymous = factory.Client();
+        using var receiver = factory.Client(IdentityPermissions.ReceiveInventory);
+        using var reader = factory.Client(IdentityPermissions.ViewInventory);
+        using var adjuster = factory.Client(IdentityPermissions.AdjustInventory);
+        const string route = "/api/v1/inventory/adjustments";
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(route)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await receiver.GetAsync(route)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await reader.GetAsync(route + "?pageSize=101")).StatusCode);
+        var response = await adjuster.PostAsJsonAsync("/api/v1/inventory/warehouses", new WarehouseInput { Name = "Main", Code = "MAIN" });
+        var warehouse = (await response.Content.ReadFromJsonAsync<ApiResponse<WarehouseDto>>())!.Data;
+        var updated = await adjuster.PutAsJsonAsync($"/api/v1/inventory/warehouses/{warehouse.Id}", new WarehouseInput { Name = "Main", Code = "MAIN", IsActive = false });
+        Assert.False((await updated.Content.ReadFromJsonAsync<ApiResponse<WarehouseDto>>())!.Data.IsActive);
+        Assert.Equal(HttpStatusCode.Forbidden, (await reader.PutAsJsonAsync($"/api/v1/inventory/warehouses/{warehouse.Id}", new WarehouseInput { Name = "Main", Code = "MAIN" })).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await adjuster.PostAsJsonAsync(route, new StockAdjustmentInput { OperationId = Guid.NewGuid(), WarehouseId = warehouse.Id, ProductVariantId = factory.Catalog.Id, QuantityDelta = 0, Reason = "Invalid", Reference = "invalid" })).StatusCode);
+        Assert.Empty(factory.Store.Movements);
     }
 }

@@ -49,6 +49,8 @@ internal sealed class InventoryReadStore(InventoryDbContext context) : IInventor
     private IQueryable<InventoryMovement> Movements(InventoryQuery query)
     {
         var values = context.Movements.AsNoTracking();
+        if (query.FromUtc is not null) { var from = query.FromUtc.Value.ToUniversalTime(); values = values.Where(value => value.CreatedAtUtc >= from); }
+        if (query.ToUtc is not null) { var to = query.ToUtc.Value.ToUniversalTime(); values = values.Where(value => value.CreatedAtUtc < to); }
         if (query.WarehouseId is not null) values = values.Where(value => context.Stocks.Any(stock => stock.Id == value.StockId && stock.WarehouseId == query.WarehouseId));
         if (query.ProductVariantId is not null) values = values.Where(value => context.Stocks.Any(stock => stock.Id == value.StockId && stock.ProductVariantId == query.ProductVariantId));
         if (query.MovementType is not null)
@@ -92,6 +94,25 @@ internal sealed class InventoryReadStore(InventoryDbContext context) : IInventor
                            select new ReceiptDto(receipt.Id, new(movement.Id, movement.OperationId, stock.Id, stock.WarehouseId, stock.ProductVariantId,
                                movement.QuantityDelta, movement.QuantityBefore, movement.QuantityAfter, movement.Type.ToString(),
                                movement.Reference, movement.Reason, movement.ActorId, movement.CreatedAtUtc, movement.CorrelationId));
+    }
+    public async Task<InventoryPage<AdjustmentDto>> ListAdjustmentsAsync(InventoryQuery query, CancellationToken ct)
+    {
+        var movements = Movements(query).Where(value => context.Adjustments.Any(adjustment => adjustment.MovementId == value.Id));
+        var total = await movements.CountAsync(ct);
+        var items = await AdjustmentPage(query).ToListAsync(ct);
+        return new(items, query.Page, query.PageSize, total);
+    }
+    internal IQueryable<AdjustmentDto> AdjustmentPage(InventoryQuery query)
+    {
+        var movements = Movements(query).Where(value => context.Adjustments.Any(adjustment => adjustment.MovementId == value.Id));
+        var page = movements.OrderByDescending(value => value.CreatedAtUtc).ThenBy(value => value.Id).Skip(Offset(query)).Take(query.PageSize);
+        return from movement in page
+            join stock in context.Stocks.AsNoTracking() on movement.StockId equals stock.Id
+            join adjustment in context.Adjustments.AsNoTracking() on movement.Id equals adjustment.MovementId
+            orderby movement.CreatedAtUtc descending, movement.Id
+            select new AdjustmentDto(adjustment.Id, new(movement.Id, movement.OperationId, stock.Id, stock.WarehouseId, stock.ProductVariantId,
+                movement.QuantityDelta, movement.QuantityBefore, movement.QuantityAfter, movement.Type.ToString(),
+                movement.Reference, movement.Reason, movement.ActorId, movement.CreatedAtUtc, movement.CorrelationId));
     }
     private static int Offset(InventoryQuery query) => checked((query.Page - 1) * query.PageSize);
 }

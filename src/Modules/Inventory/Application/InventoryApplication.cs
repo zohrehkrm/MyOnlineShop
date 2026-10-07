@@ -24,7 +24,8 @@ public static class InventoryValidation
     {
         if (!Validator.TryValidateObject(input, new ValidationContext(input), [], true)) throw InventoryException.Invalid();
         if (input is InventoryQuery query && (((long)query.Page - 1) * query.PageSize > int.MaxValue ||
-            query.WarehouseId == Guid.Empty || query.ProductVariantId == Guid.Empty)) throw InventoryException.Invalid();
+            query.WarehouseId == Guid.Empty || query.ProductVariantId == Guid.Empty ||
+            (query.FromUtc is { } from && query.ToUtc is { } to && from >= to))) throw InventoryException.Invalid();
         if (input is StockOperationInput operation)
             Check(operation.OperationId, operation.WarehouseId, operation.ProductVariantId);
         if (input is StockAdjustmentInput adjustment)
@@ -178,4 +179,6 @@ public sealed class InventoryQueries(IInventoryReadStore store) : IInventoryQuer
     { InventoryValidation.Validate(query); return store.ListMovementsAsync(query, ct); }
     public Task<InventoryPage<ReceiptDto>> ListReceiptsAsync(InventoryQuery query, CancellationToken ct)
     { InventoryValidation.Validate(query); return store.ListReceiptsAsync(query, ct); }
+    public Task<InventoryPage<AdjustmentDto>> ListAdjustmentsAsync(InventoryQuery query, CancellationToken ct)
+    { InventoryValidation.Validate(query); return store.ListAdjustmentsAsync(query, ct); }
 }

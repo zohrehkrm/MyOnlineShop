@@ -21,8 +21,8 @@ public sealed class OrderController(IOrderQueries queries, IOrderCommands comman
     [HttpPost("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct) => Ok(Envelope(await commands.CancelAsync(Actor, id, ct)));
     [HttpGet("management"), Authorize(Policy = IdentityPermissions.ViewOrders)]
-    public async Task<IActionResult> All(CancellationToken ct, int page = 1, int pageSize = 20) =>
-        Ok(Envelope(await queries.ListAsync(page, pageSize, ct)));
+    public async Task<IActionResult> All([FromQuery] OrderListQuery query, CancellationToken ct) =>
+        Ok(Envelope(await queries.ListAsync(query, ct)));
     [HttpGet("management/{id:guid}"), Authorize(Policy = IdentityPermissions.ViewOrders)]
     public async Task<IActionResult> Detail(Guid id, CancellationToken ct) => Ok(Envelope(await queries.GetAsync(id, ct)));
     [HttpPatch("management/{id:guid}/status"), Authorize(Policy = IdentityPermissions.ManageOrders)]

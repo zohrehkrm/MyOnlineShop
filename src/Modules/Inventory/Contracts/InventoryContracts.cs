@@ -41,6 +41,8 @@ public sealed class InventoryQuery
     public bool? IsActive { get; init; }
     public bool LowStockOnly { get; init; }
     [RegularExpression("^(Receipt|Sale|Return|Damage|ManualAdjustment)$")] public string? MovementType { get; init; }
+    public DateTimeOffset? FromUtc { get; init; }
+    public DateTimeOffset? ToUtc { get; init; }
 }
 public sealed record WarehouseDto(Guid Id, string Name, string Code, bool IsActive);
 public sealed record StockDto(Guid Id, Guid WarehouseId, Guid ProductVariantId, long Quantity, long AvailableQuantity, long LowStockThreshold, bool IsActive);
@@ -48,6 +50,7 @@ public sealed record MovementDto(Guid Id, Guid OperationId, Guid StockId, Guid W
     long QuantityDelta, long QuantityBefore, long QuantityAfter, string Type, string Reference, string Reason,
     Guid ActorId, DateTimeOffset CreatedAtUtc, string CorrelationId);
 public sealed record ReceiptDto(Guid Id, MovementDto Movement);
+public sealed record AdjustmentDto(Guid Id, MovementDto Movement);
 public sealed record InventoryPage<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
 public interface IInventoryCommands
@@ -72,4 +75,5 @@ public interface IInventoryQueries
     Task<InventoryPage<StockDto>> ListStockAsync(InventoryQuery query, CancellationToken ct);
     Task<InventoryPage<MovementDto>> ListMovementsAsync(InventoryQuery query, CancellationToken ct);
     Task<InventoryPage<ReceiptDto>> ListReceiptsAsync(InventoryQuery query, CancellationToken ct);
+    Task<InventoryPage<AdjustmentDto>> ListAdjustmentsAsync(InventoryQuery query, CancellationToken ct);
 }
