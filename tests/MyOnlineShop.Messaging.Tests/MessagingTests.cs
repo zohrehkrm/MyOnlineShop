@@ -84,10 +84,10 @@ public sealed class MessagingTests
         var stock = new MyOnlineShop.Inventory.Tests.CommandHarness(); var consumer = new PaymentSucceededConsumer(stock.Commands, new Clock());
         var envelope = MessageEnvelope.From(Events.Payment(new Clock(), stock.Warehouse, stock.Catalog.Id), "ack");
         var processor = new DeferredProcessor(); var settlement = new Settlement();
-        var dispatch = new ConsumerDeliveryDispatcher(processor, new()).DeliverAsync(consumer, envelope, settlement, default);
+        var dispatch = new ConsumerDeliveryDispatcher(processor, new(), new Capture<ConsumerDeliveryDispatcher>()).DeliverAsync(consumer, envelope, settlement, default);
         Assert.False(settlement.Ack); processor.Completion.SetResult(ConsumptionDisposition.Processed); await dispatch; Assert.True(settlement.Ack);
         var dead = new DeferredProcessor(); var rejected = new Settlement(); dead.Completion.SetResult(ConsumptionDisposition.Dead);
-        await new ConsumerDeliveryDispatcher(dead, new()).DeliverAsync(consumer, envelope, rejected, default);
+        await new ConsumerDeliveryDispatcher(dead, new(), new Capture<ConsumerDeliveryDispatcher>()).DeliverAsync(consumer, envelope, rejected, default);
         Assert.False(rejected.Ack); Assert.False(rejected.Requeue);
     }
     [Fact]

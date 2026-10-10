@@ -1,4 +1,5 @@
 using MyOnlineShop.BuildingBlocks.Abstractions.Messaging;
+using Microsoft.Extensions.Logging;
 
 namespace MyOnlineShop.BuildingBlocks.Infrastructure.Messaging;
 
@@ -19,16 +20,24 @@ public interface IMessageSettlement
     Task AcknowledgeAsync(CancellationToken ct);
     Task RejectAsync(bool requeue, CancellationToken ct);
 }
-public sealed class ConsumerDeliveryDispatcher(IMessageProcessor processor, MessagingOptions options)
+public sealed class ConsumerDeliveryDispatcher(IMessageProcessor processor, MessagingOptions options, ILogger<ConsumerDeliveryDispatcher> logger)
 {
     public async Task DeliverAsync(IMessageConsumer consumer, MessageEnvelope envelope, IMessageSettlement settlement, CancellationToken ct)
     {
         ConsumptionDisposition result;
         try { result = await processor.ProcessAsync(consumer, envelope, ct); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (InvalidMessageException) { result = ConsumptionDisposition.Dead; }
+        catch (InvalidMessageException)
+        {
+            logger.LogWarning("Consumer delivery rejected {MessageId} {ConsumerName} {FailureKind}", envelope.MessageId, consumer.ConsumerName, "InvalidEnvelope");
+            result = ConsumptionDisposition.Dead;
+        }
         // Infrastructure failure leaves the original broker delivery unacked until requeued.
-        catch { result = ConsumptionDisposition.Retry; }
+        catch
+        {
+            logger.LogWarning("Consumer delivery deferred {MessageId} {ConsumerName} {FailureKind}", envelope.MessageId, consumer.ConsumerName, "Infrastructure");
+            result = ConsumptionDisposition.Retry;
+        }
         if (result is ConsumptionDisposition.Processed or ConsumptionDisposition.Duplicate or ConsumptionDisposition.Rejected)
             await settlement.AcknowledgeAsync(ct);
         else

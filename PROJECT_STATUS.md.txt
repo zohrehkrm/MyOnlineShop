@@ -2,14 +2,29 @@
 
 ## Current Phase
 
-Phase 15 — Admin & Warehouse APIs
+Phase 17 — Docker & Documentation
 
 ## Status
 
-Complete under infrastructure-free validation; live SQL concurrency/transactions and missing Phase 8 Payment integration remain deferred
+Complete under configuration/static and database-free validation; container runtime and live infrastructure validation deferred. Not production-ready while Phase 8 Payment and release blockers remain incomplete.
 
 ## Completed
 
+* Phase 17 local Docker configuration and documentation, preserving existing application/module ownership and infrastructure implementations
+* Multi-stage .NET 10 API Dockerfile with non-root runtime and liveness check; protected build context and environment ignore rules
+* Compose SQL Server 2022 Developer, Redis 7.4 and RabbitMQ 4.2 configuration with authentication, health checks, three persistent named volumes and private backend networking
+* Localhost-only API/SQL ports; Redis/AMQP unpublished and RabbitMQ management available only through an explicit localhost override
+* Empty secret template and non-overwriting cryptographic local environment generator; existing JWT validation remains enforced
+* README documentation index and DOCKER.md setup, shutdown, all 12 owner migration contexts, testing, troubleshooting and production limitations
+* API build passed with zero warnings/errors; focused Foundation/Identity tests: 49 passed, 0 failed, 14 SQL-dependent skips
+* Both Compose configurations validated with installed CLI; static Dockerfile/PowerShell, exposed-port/volume/default-feature, secret-placeholder/ignore and local documentation-link checks passed
+* No image build, container/service startup, infrastructure connection, migration application, data deletion or application/model change in Phase 17
+* Phase 16 focused security/reliability hardening and a regression strategy covering all implemented modules, Admin APIs and available Payment-related contracts/consumers
+* Safe message correlation validation, Outbox fingerprint/payload checks, validated failure-log metadata and safe processor-failure diagnostics
+* Real-JWT cross-module admin denial, duplicate-claim and persisted-permission tests; production exception/log safety and deterministic message cancellation tests
+* Serialized database-free regression runner with TRX reports, accurate skip summaries and process-only infrastructure guards
+* Initial/final affected API builds passed with zero warnings/errors; final unique regression outcome: 304 passed, 0 failed, 67 skipped
+* Security checklist, transaction/concurrency review, deferred integrations and release blockers documented in HARDENING.md; no model, permission or migration changes
 * Phase 15 reused existing module-owned administrative APIs, commands/queries and Identity permissions without duplicating business workflows
 * Order management status/UTC date filters, paginated shipment management summaries and Inventory adjustment history with date filters
 * Safe structured Catalog and warehouse/stock-setting administration audit logs from authenticated actors
@@ -167,7 +182,7 @@ The current implementation must follow the phase requested by the user.
 
 ## Active Work
 
-None. Phase 15 is complete under available infrastructure-free validation. Live SQL concurrency/transactions and execution plans remain deferred. Phase 8 is absent, so verified-payment integration/reporting and Phase 11 production refunds remain blocked. Phase 16 was not started.
+None. Phase 17 is complete under configuration/static and database-free validation. Phase 8 Payment is still absent; verified-payment producer/amount verification, paid-Order integration/reporting and production refund evidence remain blocked. Docker image/runtime, live SQL concurrency/transactions, RabbitMQ/Redis runtime and execution plans remain deferred. Production readiness is not claimed.
 
 ## Completed Phases
 
@@ -187,8 +202,8 @@ None. Phase 15 is complete under available infrastructure-free validation. Live 
 * [x] Phase 13 — Redis & Caching
 * [x] Phase 14 — Reporting
 * [x] Phase 15 — Admin & Warehouse APIs
-* [ ] Phase 16 — Testing & Hardening
-* [ ] Phase 17 — Docker & Documentation
+* [x] Phase 16 — Testing & Hardening
+* [x] Phase 17 — Docker & Documentation (configuration/static validation; runtime deferred)
 
 ## Known Issues
 
@@ -570,6 +585,33 @@ Important integration events use Transactional Outbox before RabbitMQ publicatio
 * Skips: 62 SQL-dependent tests, 1 RabbitMQ test, 1 Redis test and 3 true Payment E2E tests blocked by missing Phase 8. Infrastructure connection variables were cleared before regression; dependent tests compiled but did not run. Offline SQL translation/model checks open no connection. No SQL Server, LocalDB, Redis, RabbitMQ or Docker was installed, started or contacted; no persistent database was modified.
 * Migration status: no model/seed changes and no Phase 15 migration needed; existing SQL Server Code First/migrations remain configured, none applied. ADMIN_WAREHOUSE.md documents routes, reused permissions, filter semantics, audit limitations and missing dependencies. Phase 8 producer/verified-payment integration, refund evidence and verified-payment reporting remain pending; Phase 16 has not started.
 
+### Testing & Hardening
+
+* Phase 16 completed under available infrastructure-free validation on 2026-10-10. Scoped review covered existing authentication/API tests, critical Inventory/Wallet/Order/Refund transaction paths, Outbox/Inbox/RabbitMQ control flow, EF constraints/indexes/precision, cache authority and existing Reporting/Admin regression evidence. Architecture and business workflows were preserved; no major functionality or later phase was implemented.
+* Security/reliability issues found and fixed: message correlation metadata allowed unsafe/control characters; dispatch did not recheck stored Outbox fingerprint/UTF-8 payload limits; invalid stored metadata could be echoed into failure logs; processor infrastructure errors outside Inbox handling could be retried without diagnostics. Existing messaging abstractions now reject unsafe correlations (preserving empty correlation compatibility), retain corrupt/oversized events as Dead and log safe validated metadata/failure categories without exception objects, secrets or bodies. No event is marked Published before successful publishing.
+* Added 21 focused test cases: Foundation 2 production generic/database exception/log-safety cases; Identity 9 real-JWT admin policy, forged-role/permission, duplicate mandatory claim and malformed/unsigned token cases; Messaging 10 correlation, corrupt/oversized event, safe metadata logging and cancellation/acknowledgement cases. Tests exercise existing production JWT/policies and use no new authorization bypass. A message cancellation fixture was made deterministic and its final focused rerun passed all 10 cases.
+* Initial and final affected API builds succeeded with zero warnings/errors. Focused Foundation and Identity security tests passed. A new Messaging test initially failed compilation because an options property is init-only; corrected before successful execution. All thirteen relevant suites were then built/tested serially without a full-solution rebuild. No unrelated passing suites were repeatedly rebuilt/tested.
+* Final unique regression outcome: 304 passed, 0 failed, 67 skipped. Suite breakdown (passed/skipped): Foundation 17/1; Identity 32/13; Catalog 32/0; Inventory 17/8; Cart 13/5; PricingDiscount 36/5; Order 28/5; Wallet 21/6; Messaging 20/9; Refund 20/6; Shipping 20/6; Caching 19/1; Reporting 29/2. Skips remain 62 SQL-dependent tests, 1 RabbitMQ, 1 Redis and 3 true Payment E2E tests blocked by missing Phase 8. All dependent suites compiled; none of those integrations was executed.
+* scripts/Test-Regression.ps1 records per-project TRX and summary.json in artifacts/phase16-tests, clears process-only infrastructure connection variables, disables inherited worker/cache/bootstrap features and restores settings afterward. Runtime external features were already disabled during this run. The xUnit TRX notExecuted aggregate unexpectedly reported zero despite skipped outcomes; the script now counts individual NotExecuted results and checks total consistency. Corrected summary generation was executed successfully from existing reports without rerunning tests. Script execution requires the local PowerShell policy to permit it; no machine policy was changed.
+* Concurrency review: preserved the parameterized conditional Inventory UPDATE, bounded/nonnegative quantities, affected-row handling, operation locks, stock/operation uniqueness and rowversions. Existing stock=1/two concurrent deductions test compiles but remains skipped. No concurrency defect requiring an Inventory redesign was found during the scoped review; SQL runtime correctness is unverified, not claimed by InMemory tests.
+* Financial/idempotency review: decimal/currency precision, Wallet ledger/balance reconciliation, database-backed operation/business-reference uniqueness and conditional balance updates remain intact. Inventory/Wallet local transactions, Order Cart/Messaging enlistment, Inbox participant/savepoint rollback and Refund Messaging enlistment were reviewed. Refund Wallet credit uses its existing independent transaction/stable key to recover completion gaps. Existing rollback/duplicate concurrency tests compile but remain deferred; no new transaction design or financial behavior was introduced.
+* Security checklist verified through available tests/review: JWT/expiration/signature/claims and refresh revocation; explicit admin permissions and persisted assignments; resource ownership; bounded input/malformed request/date/status/pagination validation; server-owned monetary/stock/audit fields; safe logs/production errors/correlation; parameterized SQL; unique keys/precision/restrictive deletes/rowversions; decimal financial rules; cache invalidation/failure behavior and uncached financial/Inventory truth. Existing state-machine, ownership, over-posting, financial and cache tests passed. No new N+1/unbounded read, blanket index or query rewrite was introduced; live profiling remains deferred.
+* Database/migration status: no entity/model/seed/index changes and no migration required or generated. SQL Server Code First remains configured; no migration was applied and no persistent database was changed. No SQL Server, LocalDB, RabbitMQ, Redis or Docker was installed, started or contacted.
+* Known remaining release blockers: Phase 8 Payment producer/verification/amount checks and authoritative refund evidence are absent; true Payment E2E/reporting remains unavailable. SQL oversell/rollback/rowversion guarantees, broker confirms/recovery and live Redis behavior require authorized isolated integration validation. Metadata audit retention depends on a durable logging sink with a commit-to-log gap; Dead-message recovery operations, live load/plans and deployment security/monitoring remain operational work. HARDENING.md documents the complete regression/checklist evidence and limitations. Production readiness is explicitly not claimed.
+
+### Docker & Documentation
+
+* Phase 17 completed on 2026-10-10 under checks that require no infrastructure startup. Created Dockerfile, .dockerignore, compose.yaml, compose.management.yaml, .env.example, scripts/Initialize-LocalEnvironment.ps1, README.md and DOCKER.md. Updated .gitignore to exclude local environment variants and local secret appsettings. No application code, package, model or migration was changed.
+* Actual API/EF target is .NET 10; Docker stages use official SDK/ASP.NET 10 images, publish the existing host and run with the non-root image application UID. Curl provides the existing API liveness check. SQL Server 2022 Developer, Redis 7.4 Alpine and RabbitMQ 4.2 management Alpine image choices were checked against official documentation/image listings. Moving local tags require reviewed digest pinning for reproducible deployment.
+* Compose provides authenticated SQL/Redis/RabbitMQ, service health checks, separate persistent sql-data/redis-data/rabbitmq-data volumes and an internal backend network. API/SQL ports bind only to localhost; Redis/AMQP have no published ports. RabbitMQ management is an explicit localhost-only override, with stable broker hostname for persistent node identity. Developer SQL licensing, local HTTP, trusted development SQL certificate and local SA use are documented development limits.
+* Six required configuration values have empty .env.example placeholders. The environment generator uses independent cryptographic randomness, a strong SQL password and a 32-byte Base64 signing key; CreateNew and an existing-file check prevent overwrite. Its PowerShell syntax was validated, but it was not executed to create real local secrets. No real credentials were added. Local environment/inspection visibility is explicitly not a production secret store. Existing authentication, configuration validation and safe structured logging remain unchanged.
+* Existing Outbox/Inbox/workers and consumer routing are reused. Messaging defaults disabled; refund scheduling and administrator bootstrap remain disabled. The optional durable operational event queue has no invented business consumer and needs retention monitoring. Redis is optional DTO caching with existing runtime failure fallback; initial Compose startup still health-gates all infrastructure. Money/stock/checkout authority remains SQL. No Payment implementation or fake producer was added.
+* DOCKER.md documents prerequisites, generated/manual configuration, intentional startup/shutdown without volume deletion, local host/container connection differences, Swagger and process-only health semantics, opt-in management access, all twelve owner DbContexts, script/review/manual migration application, administrator provisioning links, database-free/deferred integration tests and targeted troubleshooting. Host EF tooling must receive secure process configuration separately because dotnet does not load .env. No automatic migrations/reset/init script was introduced.
+* API build succeeded with zero warnings/errors. Focused Foundation tests passed 17 with 1 SQL skip; Identity tests passed 32 with 13 SQL skips: 49 passed, 0 failed, 14 skipped. Infrastructure opt-in variables were cleared and external/cache/bootstrap features disabled only for the test process, then restored. Reports are in artifacts/phase17-tests. Unrelated module suites were not rerun; the prior Phase 16 304-pass/67-skip regression remains separately recorded.
+* Installed Docker 28.3.2 / Compose v2.39.1 validated the base configuration and management override using process-only non-secret validation placeholders and no daemon operations. Structured inspection verified four services, three volumes, health checks, localhost bindings, private Redis/AMQP and disabled default workers/bootstrap. An initial unquoted YAML value was corrected before successful validation; a PowerShell property-count verification issue was corrected and the check passed. Docker emitted a sandbox client-config access warning but validation returned success; no credential file was read or shared.
+* Dockerfile syntax/instructions, existing COPY sources, framework/entrypoint/non-root runtime, PowerShell parser, empty required placeholders, environment ignore rules and local documentation links were reviewed successfully. No Docker image was pulled/built or run, so Linux publish, image installation, runtime health and network behavior remain unverified. No SQL Server/LocalDB, Redis or RabbitMQ was installed, started or contacted; no migration was applied, persistent database modified, container volume deleted or architecture changed.
+* Previous completion states are preserved. Phase 8 Payment remains incomplete, including producer/verification/amount validation, paid-Order integration, authoritative refund evidence and true Payment E2E/reporting. Future authorized disposable-infrastructure validation is needed for SQL concurrency/rollback, broker confirms/recovery and Redis behavior. Production also requires secrets/rotation, TLS/reverse proxy validation, least privilege, backups/recovery, monitoring/alerting, rate/resource/network controls, durable logging, broker operations, migration rollout and security/image review. No production-ready claim or later-phase implementation is made.
+
 ## Next Phase
 
-Phase 16 — Testing & Hardening (not started; requires a new user request). Phase 8 Payment remains unimplemented, including verified payment reporting, the producer/paid Order integration and authoritative refund evidence. Live SQL concurrency/transaction/reporting checks, Redis/RabbitMQ runtime and true Payment E2E validation remain deferred. Phase 15 did not implement any later phase.
+Recommended next work: separately authorize and complete Phase 8 Payment, then run deferred container/runtime/concurrency/rollback/broker/cache/E2E validation against explicitly authorized isolated infrastructure. Phase 17 is complete within configuration/documentation scope; no infrastructure startup, migration application, Payment implementation or later work was performed.

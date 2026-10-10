@@ -93,12 +93,19 @@ public sealed class OutboxDispatcher(IOutboxDeliveryStore store, IMessagePublish
         foreach (var message in await store.ClaimAsync(ct))
         {
             if (message.Status != "Publishing") continue;
+            string? safeCorrelation = null;
+            string? safeEventType = null;
             try
             {
                 if (!await store.RenewAsync(message, ct)) continue;
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeout.CancelAfter(TimeSpan.FromSeconds(options.Value.PublishTimeoutSeconds));
-                var envelope = message.Envelope(); envelope.Validate(); await publisher.PublishAsync(envelope, timeout.Token);
+                var envelope = message.Envelope(); envelope.Validate();
+                safeCorrelation = envelope.CorrelationId; safeEventType = envelope.EventType;
+                if (message.Fingerprint != MessageFingerprint.Of(envelope) ||
+                    Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(envelope)) > options.Value.MaximumPayloadBytes)
+                    throw new InvalidMessageException();
+                await publisher.PublishAsync(envelope, timeout.Token);
                 await store.CompleteAsync(message, ct);
                 logger.LogInformation("Outbox published {MessageId} {EventType} {RetryCount} {CorrelationId}", message.Id, message.EventType, message.RetryCount, message.CorrelationId);
             }
@@ -109,7 +116,7 @@ public sealed class OutboxDispatcher(IOutboxDeliveryStore store, IMessagePublish
                 var permanent = error is InvalidMessageException or JsonException;
                 var safe = permanent ? "Invalid event envelope." : "Publish or completion failed; delivery outcome may be unknown.";
                 await store.FailAsync(message, !permanent, safe, ct);
-                logger.LogWarning("Outbox failed {MessageId} {EventType} {RetryCount} {FailureKind} {CorrelationId}", message.Id, message.EventType, message.RetryCount, permanent ? "InvalidEnvelope" : "Infrastructure", message.CorrelationId);
+                logger.LogWarning("Outbox failed {MessageId} {EventType} {RetryCount} {FailureKind} {CorrelationId}", message.Id, safeEventType, message.RetryCount, permanent ? "InvalidEnvelope" : "Infrastructure", safeCorrelation);
             }
         }
     }

@@ -1,0 +1,5 @@
+# Explicit opt-in for the local management UI; no host AMQP or Redis port is published.
+services:
+  rabbitmq:
+    ports:
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"

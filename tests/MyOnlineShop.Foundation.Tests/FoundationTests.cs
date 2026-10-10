@@ -46,6 +46,9 @@ public sealed class FoundationProbeController : ControllerBase
     [HttpGet("throw")]
     public IActionResult Throw() => throw new InvalidOperationException("secret-password");
 
+    [HttpGet("db-error")]
+    public IActionResult DatabaseError() => throw new DbUpdateException("Server=private-server;Password=private-secret");
+
     [HttpGet("context")]
     public IActionResult Context([FromServices] IRequestContext context) => Ok(context.CorrelationId);
 

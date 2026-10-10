@@ -1,0 +1,114 @@
+name: myonlineshop-dev
+services:
+  api:
+    image: myonlineshop-api:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ConnectionStrings__SqlServer: ${API_SQL_CONNECTION_STRING:?Set API_SQL_CONNECTION_STRING in .env}
+      IdentitySecurity__SigningKeyBase64: ${JWT_SIGNING_KEY_BASE64:?Set JWT_SIGNING_KEY_BASE64 in .env}
+      Redis__Enabled: ${REDIS_ENABLED:-true}
+      Redis__ConnectionString: redis:6379,password=${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env},abortConnect=false
+      Redis__InstanceName: "MyOnlineShop:compose-dev:"
+      Messaging__Enabled: ${MESSAGING_ENABLED:-false}
+      Messaging__RabbitMq__Host: rabbitmq
+      Messaging__RabbitMq__Port: "5672"
+      Messaging__RabbitMq__Username: ${RABBITMQ_USERNAME:?Set a non-guest RABBITMQ_USERNAME in .env}
+      Messaging__RabbitMq__Password: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      Messaging__RabbitMq__VirtualHost: myonlineshop-dev
+      Messaging__RabbitMq__Exchange: myonlineshop.events
+      Messaging__RabbitMq__DeadLetterExchange: myonlineshop.dead
+      Messaging__RabbitMq__UseTls: "false"
+      Messaging__RabbitMq__Queues__0__Queue: inventory.payment-succeeded.v1
+      Messaging__RabbitMq__Queues__0__DeadLetterQueue: inventory.payment-succeeded.v1.dead
+      Messaging__RabbitMq__Queues__0__ConsumerName: inventory.payment-succeeded.v1
+      Messaging__RabbitMq__Queues__0__RoutingKeys__0: payments.succeeded.v1
+      Messaging__RabbitMq__Queues__1__Queue: refund.inventory-unavailable.v1
+      Messaging__RabbitMq__Queues__1__DeadLetterQueue: refund.inventory-unavailable.v1.dead
+      Messaging__RabbitMq__Queues__1__ConsumerName: refund.inventory-unavailable.v1
+      Messaging__RabbitMq__Queues__1__RoutingKeys__0: inventory.unavailable.v1
+      Messaging__RabbitMq__Queues__2__Queue: refund.due.v1
+      Messaging__RabbitMq__Queues__2__DeadLetterQueue: refund.due.v1.dead
+      Messaging__RabbitMq__Queues__2__ConsumerName: refund.due.v1
+      Messaging__RabbitMq__Queues__2__RoutingKeys__0: refunds.due.v1
+      Messaging__RabbitMq__Queues__3__Queue: operational.audit.v1
+      Messaging__RabbitMq__Queues__3__DeadLetterQueue: operational.audit.v1.dead
+      Messaging__RabbitMq__Queues__3__RoutingKeys__0: orders.created.v1
+      Messaging__RabbitMq__Queues__3__RoutingKeys__1: refunds.requested.v1
+      Messaging__RabbitMq__Queues__3__RoutingKeys__2: refunds.completed.v1
+      Messaging__RabbitMq__Queues__3__RoutingKeys__3: refunds.failed.v1
+      RefundProcessing__Enabled: "false"
+      BootstrapIdentityAdmin: "false"
+    ports:
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${SQL_PORT:-14333}:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "SQLCMDPASSWORD=\"$${MSSQL_SA_PASSWORD}\" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -Q 'SELECT 1' -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks:
+      - backend
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$${REDIS_PASSWORD}\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+  rabbitmq:
+    image: rabbitmq:4.2-management-alpine
+    hostname: myonlineshop-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:?Set a non-guest RABBITMQ_USERNAME in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      RABBITMQ_DEFAULT_VHOST: myonlineshop-dev
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - backend
+networks:
+  backend:
+    internal: true
+volumes:
+  sql-data:
+  redis-data:
+  rabbitmq-data:

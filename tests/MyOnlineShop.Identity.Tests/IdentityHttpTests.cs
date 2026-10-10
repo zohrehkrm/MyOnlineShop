@@ -48,7 +48,7 @@ public sealed class IdentityHttpFactory : WebApplicationFactory<Program>
     }
 }
 
-public sealed class IdentityHttpTests
+public sealed partial class IdentityHttpTests
 {
     private const string Password = "Http-Test-Password1!";
     private static async Task<UserDto> RegisterAsync(HttpClient client, string email = "customer@example.test", string? phone = null)

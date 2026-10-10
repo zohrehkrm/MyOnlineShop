@@ -16,7 +16,8 @@ public sealed record MessageEnvelope(Guid MessageId, string EventType, int Versi
     {
         if (MessageId == Guid.Empty || string.IsNullOrWhiteSpace(EventType) || EventType.Length > 128 ||
             EventType.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '.' and not '-' and not '_') || Version is < 1 or > 1000 ||
-            OccurredAtUtc == default || OccurredAtUtc.Offset != TimeSpan.Zero || CorrelationId is null || CorrelationId.Length > 128 || Payload.ValueKind != JsonValueKind.Object)
+            OccurredAtUtc == default || OccurredAtUtc.Offset != TimeSpan.Zero || CorrelationId is null || CorrelationId.Length > 128 ||
+            CorrelationId.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '-' and not '_' and not '.') || Payload.ValueKind != JsonValueKind.Object)
             throw new InvalidMessageException();
     }
     public static MessageEnvelope From(IIntegrationEvent value, string correlationId)

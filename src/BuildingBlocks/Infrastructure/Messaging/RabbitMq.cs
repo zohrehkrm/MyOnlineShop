@@ -128,7 +128,8 @@ public sealed class RabbitMqConsumerWorker(IServiceScopeFactory scopes, IRabbitM
                                 using var scope = scopes.CreateScope();
                                 scope.ServiceProvider.GetRequiredService<MessageRequestContext>().CorrelationId = envelope.CorrelationId;
                                 var consumer = scope.ServiceProvider.GetServices<IMessageConsumer>().Single(value => value.ConsumerName == binding.ConsumerName);
-                                var dispatcher = new ConsumerDeliveryDispatcher(scope.ServiceProvider.GetRequiredService<IMessageProcessor>(), options.Value);
+                                var dispatcher = new ConsumerDeliveryDispatcher(scope.ServiceProvider.GetRequiredService<IMessageProcessor>(), options.Value,
+                                    scope.ServiceProvider.GetRequiredService<ILogger<ConsumerDeliveryDispatcher>>());
                                 await dispatcher.DeliverAsync(consumer, envelope, new RabbitMessageSettlement(channel, delivery.DeliveryTag), stoppingToken);
                             }
                             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { return; }
