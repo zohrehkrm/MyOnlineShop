@@ -7,12 +7,12 @@ $infrastructureVariables = @(
     'FOUNDATION_TEST_SQL_SERVER', 'IDENTITY_TEST_SQL_SERVER', 'INVENTORY_TEST_SQL_SERVER',
     'CART_TEST_SQL_SERVER', 'PRICING_TEST_SQL_SERVER', 'ORDER_TEST_SQL_SERVER', 'WALLET_TEST_SQL_SERVER',
     'MESSAGING_TEST_SQL_SERVER', 'MESSAGING_TEST_RABBITMQ', 'REFUND_TEST_SQL_SERVER',
-    'SHIPPING_TEST_SQL_SERVER', 'REDIS_TEST_CONNECTION_STRING', 'REPORTING_TEST_SQL_SERVER'
+    'SHIPPING_TEST_SQL_SERVER', 'REDIS_TEST_CONNECTION_STRING', 'REPORTING_TEST_SQL_SERVER', 'PAYMENT_TEST_SQL_SERVER'
 )
 $previousVariables = @{}
 $disabledFeatures = @('Messaging__Enabled', 'RefundProcessing__Enabled', 'Redis__Enabled', 'BootstrapIdentityAdmin')
 $projects = @('Foundation', 'Identity', 'Catalog', 'Inventory', 'Cart', 'PricingDiscount', 'Order',
-    'Wallet', 'Messaging', 'Refund', 'Shipping', 'Caching', 'Reporting')
+    'Payment', 'Wallet', 'Messaging', 'Refund', 'Shipping', 'Caching', 'Reporting')
 $summary = @()
 try {
     Set-Location -LiteralPath $repository

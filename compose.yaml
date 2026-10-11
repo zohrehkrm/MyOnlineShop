@@ -42,6 +42,11 @@ services:
       Messaging__RabbitMq__Queues__3__RoutingKeys__3: refunds.failed.v1
       RefundProcessing__Enabled: "false"
       BootstrapIdentityAdmin: "false"
+      Payment__FulfillmentWarehouseId: ${PAYMENT_FULFILLMENT_WAREHOUSE_ID:-}
+      Messaging__RabbitMq__Queues__4__Queue: payment.refund-completed.v1
+      Messaging__RabbitMq__Queues__4__DeadLetterQueue: payment.refund-completed.v1.dead
+      Messaging__RabbitMq__Queues__4__ConsumerName: payment.refund-completed.v1
+      Messaging__RabbitMq__Queues__4__RoutingKeys__0: refunds.completed.v1
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:

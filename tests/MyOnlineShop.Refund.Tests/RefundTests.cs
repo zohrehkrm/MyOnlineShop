@@ -11,6 +11,42 @@ namespace MyOnlineShop.Refund.Tests;
 
 public sealed class RefundTests
 {
+    [Fact] public async Task Hold_observed_after_credit_lock_is_checked_before_new_credit()
+    {
+        using var h=new Harness(); await h.Request(); await h.Due();
+        h.Evidence.OnCreditLock=()=>h.Evidence.Proof=h.Evidence.Proof! with {ReconciliationRequired=true};
+        await h.Completion().ProcessAsync(h.RefundId,1,default);
+        Assert.Empty(h.Credits.Calls); Assert.Empty(await h.Wallet.Db.Ledger.ToListAsync());
+        Assert.Equal("PaymentReconciliationRequired",(await h.Read()).FailureCode);
+    }
+    [Fact] public async Task Reconciliation_hold_blocks_a_new_wallet_credit()
+    {
+        using var h=new Harness(); await h.Request(); await h.Due();
+        h.Evidence.Proof=h.Evidence.Proof! with {ReconciliationRequired=true};
+        await h.Completion().ProcessAsync(h.RefundId,1,default);
+        Assert.Empty(h.Credits.Calls); Assert.Empty(await h.Wallet.Db.Ledger.ToListAsync());
+        Assert.Equal("PaymentReconciliationRequired",(await h.Read()).FailureCode);
+    }
+    [Fact] public async Task Hold_after_wallet_commit_allows_read_only_completion_recovery()
+    {
+        using var h=new Harness(); await h.Request(); await h.Due(); h.Store.FailCompletionOnce=true;
+        await Assert.ThrowsAsync<IOException>(()=>h.Completion().ProcessAsync(h.RefundId,1,default));
+        h.Evidence.Proof=h.Evidence.Proof! with {ReconciliationRequired=true};
+        await h.Completion().ProcessAsync(h.RefundId,1,default);
+        Assert.Equal(RefundStatus.Completed,(await h.Read()).Status);
+        Assert.Single(h.Credits.Calls); Assert.Single(await h.Wallet.Db.Ledger.ToListAsync());
+    }
+    [Fact] public async Task Held_recovery_rejects_a_posted_credit_that_does_not_match_the_refund()
+    {
+        using var h=new Harness(); await h.Request(); await h.Due(); var refund=await h.Read();
+        await h.Wallet.Operations.CreditAsync(refund.UserId,refund.UserId,new MyOnlineShop.Wallet.Contracts.WalletOperation {
+            IdempotencyKey=refund.IdempotencyKey,Amount=1,Currency=refund.Currency,ReferenceType="Other",ReferenceId="other",Description="Test unrelated credit"
+        },default);
+        h.Evidence.Proof=h.Evidence.Proof! with {ReconciliationRequired=true};
+        await Assert.ThrowsAsync<InvalidOperationException>(()=>h.Completion().ProcessAsync(h.RefundId,1,default));
+        Assert.Empty(h.Credits.Calls); Assert.Equal(RefundStatus.Processing,(await h.Read()).Status);
+        Assert.Single(await h.Wallet.Db.Ledger.ToListAsync());
+    }
     [Fact]
     public async Task Existing_inventory_shortage_event_drives_pending_then_delayed_wallet_refund()
     {
@@ -99,7 +135,7 @@ public sealed class RefundTests
         Assert.Equal(RefundStatus.Processing, (await h.Read()).Status); Assert.Single(await h.Wallet.Db.Ledger.ToListAsync());
         await h.Completion().ProcessAsync(h.RefundId, 1, default);
         Assert.Equal(RefundStatus.Completed, (await h.Read()).Status); Assert.Single(await h.Wallet.Db.Ledger.ToListAsync());
-        Assert.Equal(h.Credits.Calls[0].Operation.IdempotencyKey, h.Credits.Calls[1].Operation.IdempotencyKey);
+        Assert.Single(h.Credits.Calls); // Completion recovery reads the posted credit without another credit request.
     }
     [Fact]
     public async Task Wallet_failure_preserves_retry_and_uses_new_delivery_with_same_business_key()
@@ -175,6 +211,6 @@ public sealed class RefundTests
         h.Db.Entry(refund).Property(value => value.FailureCode).CurrentValue = "WalletCreditFailed";
         await Assert.ThrowsAsync<InvalidOperationException>(() => h.Db.SaveChangesAsync());
     }
-    [Fact(Skip = "Blocked: Phase 8 Payment producer and authoritative payment evidence adapter are absent. No fake Payment implementation is used.")]
+    [Fact(Skip = "Blocked: real gateway verification and authorized SQL/broker infrastructure remain unavailable; simulated provider tests are not real refund E2E.")]
     public void Payment_to_inventory_to_delayed_refund_to_wallet_end_to_end() { }
 }

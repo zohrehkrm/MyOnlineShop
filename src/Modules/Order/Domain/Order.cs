@@ -11,6 +11,7 @@ public sealed class Order
     private readonly List<OrderItem> _items = [];
     private Order() { }
     public Guid Id { get; private set; }
+    public Guid? PaymentId { get; private set; }
     public Guid UserId { get; private set; }
     public Guid CartId { get; private set; }
     public Guid CartRevision { get; private set; }
@@ -63,6 +64,8 @@ public sealed class Order
     }
     public void Transition(OrderStatus next, DateTimeOffset now)
     {
+        if (Status == OrderStatus.AwaitingPayment && (next is OrderStatus.Cancelled or OrderStatus.Failed) && PaymentId is not null)
+            throw new OrderRuleException("An initiated payment must be resolved before cancellation.");
         var allowed = (Status, next) switch
         {
             (OrderStatus.Pending, OrderStatus.AwaitingPayment or OrderStatus.Cancelled or OrderStatus.Failed) => true,
@@ -77,6 +80,25 @@ public sealed class Order
     }
     public OrderDto Dto() => new(Id, Status.ToString(), Currency, Subtotal, DiscountTotal, PayableAmount, CreatedAtUtc,
         UpdatedAtUtc, PricedAtUtc, Address?.Dto(), Items.Select(item => item.Dto()).ToArray(), ShippingCost, Shipping);
+    public void BindPayment(Guid payment)
+    {
+        if (payment == Guid.Empty || Status != OrderStatus.AwaitingPayment || PaymentId is not null && PaymentId != payment)
+            throw new OrderRuleException("Order cannot accept this payment.");
+        PaymentId = payment; Revision = Guid.NewGuid();
+    }
+    public void ConfirmPayment(Guid payment, DateTimeOffset now)
+    {
+        if (PaymentId != payment) throw new OrderRuleException("Payment does not match Order.");
+        if (Status is OrderStatus.Paid or OrderStatus.Processing or OrderStatus.Shipped or OrderStatus.Completed) return;
+        Transition(OrderStatus.Paid, now);
+    }
+    public void RejectPayment(Guid payment, DateTimeOffset now)
+    {
+        if (PaymentId != payment) throw new OrderRuleException("Payment does not match Order.");
+        if (Status == OrderStatus.Failed) return;
+        if (Status != OrderStatus.AwaitingPayment) throw new OrderRuleException("Fulfilled Order cannot be rejected by Payment.");
+        Status = OrderStatus.Failed; UpdatedAtUtc = now.ToUniversalTime(); Revision = Guid.NewGuid();
+    }
 }
 public sealed class OrderItem
 {

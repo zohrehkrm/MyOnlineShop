@@ -141,6 +141,6 @@ public sealed class SqlTests(ShippingSqlFixture fixture) : IClassFixture<Shippin
         db2.ChangeTracker.Clear(); b = await db2.Shipments.SingleAsync(value => value.Id == shipment.Id);
         db2.Entry(b).Property(value => value.OrderId).CurrentValue = Guid.NewGuid(); await Assert.ThrowsAsync<InvalidOperationException>(() => db2.SaveChangesAsync());
     }
-    [Fact(Skip = "Blocked: Phase 8 verified Payment -> paid Order integration is absent. Shipping tests use explicit paid Order domain fixtures and do not create Payment.")]
-    public void Verified_payment_to_paid_order_to_shipment_end_to_end() => throw new NotSupportedException("Phase 8 producer pending.");
+    [Fact(Skip = "Blocked: real gateway verification and authorized SQL/broker infrastructure are unavailable. Existing paid Order fixtures do not establish Payment E2E.")]
+    public void Verified_payment_to_paid_order_to_shipment_end_to_end() => throw new NotSupportedException("Real gateway E2E pending.");
 }

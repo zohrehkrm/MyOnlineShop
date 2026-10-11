@@ -5,8 +5,22 @@ using MyOnlineShop.Wallet.Domain;
 
 namespace MyOnlineShop.Wallet.Infrastructure.Persistence;
 
-public sealed class WalletReadStore(WalletDbContext context) : IWalletQueries
+public sealed class WalletReadStore(WalletDbContext context) : IWalletQueries, IWalletPaymentSafety
 {
+    public Task<string?> GetPrimaryCurrencyAsync(Guid userId, CancellationToken ct)
+    {
+        WalletException.User(userId);
+        return context.Wallets.AsNoTracking().Where(x => x.UserId == userId).Select(x => x.Currency).SingleOrDefaultAsync(ct);
+    }
+    public async Task<WalletTransactionDto?> FindPostedCreditAsync(Guid userId, Guid idempotencyKey, CancellationToken ct)
+    {
+        WalletException.User(userId);
+        var entry = await (from ledger in context.Ledger.AsNoTracking()
+            join wallet in context.Wallets.AsNoTracking() on ledger.WalletId equals wallet.Id
+            where wallet.UserId == userId && ledger.IdempotencyKey == idempotencyKey && ledger.Type == WalletTransactionType.Credit && ledger.Status == WalletTransactionStatus.Posted
+            select ledger).SingleOrDefaultAsync(ct);
+        return entry?.Dto();
+    }
     public async Task<WalletDto> GetMyAsync(Guid userId, CancellationToken ct)
     {
         WalletException.User(userId);

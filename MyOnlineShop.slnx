@@ -171,5 +171,15 @@
     <Project Path="src/BuildingBlocks/Abstractions/MyOnlineShop.BuildingBlocks.Abstractions.csproj" />
     <Project Path="src/BuildingBlocks/Infrastructure/MyOnlineShop.BuildingBlocks.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Payment/">
+    <Project Path="src/Modules/Payment/Domain/MyOnlineShop.Payment.Domain.csproj" />
+    <Project Path="src/Modules/Payment/Contracts/MyOnlineShop.Payment.Contracts.csproj" />
+    <Project Path="src/Modules/Payment/Application/MyOnlineShop.Payment.Application.csproj" />
+    <Project Path="src/Modules/Payment/Infrastructure/MyOnlineShop.Payment.Infrastructure.csproj" />
+    <Project Path="src/Modules/Payment/Presentation/MyOnlineShop.Payment.Presentation.csproj" />
+  </Folder>
+  <Folder Name="/tests/Payment/">
+    <Project Path="tests/MyOnlineShop.Payment.Tests/MyOnlineShop.Payment.Tests.csproj" />
+  </Folder>
 </Solution>
  

@@ -105,8 +105,11 @@ public sealed class RefundSqlFixture : IAsyncLifetime
     {
         using var scope = Provider.CreateScope(); var services = scope.ServiceProvider;
         services.GetRequiredService<MessageRequestContext>().CorrelationId = "sql-refund";
-        return await services.GetRequiredService<IMessageProcessor>().ProcessAsync(services.GetServices<IMessageConsumer>()
-            .Single(value => value.ConsumerName == consumer), MessageEnvelope.From(message, "sql-refund"), default);
+        // Isolated Refund/Wallet recovery with explicit evidence doubles, not Payment E2E.
+        IMessageConsumer handler = consumer == "refund.inventory-unavailable.v1"
+            ? new InventoryUnavailableConsumer(services.GetRequiredService<RefundRequests>())
+            : new RefundDueConsumer(services.GetRequiredService<RefundCompletion>());
+        return await services.GetRequiredService<IMessageProcessor>().ProcessAsync(handler, MessageEnvelope.From(message, "sql-refund"), default);
     }
     public async Task<RefundDueIntegrationEventV1> Schedule(Guid refund)
     {

@@ -54,6 +54,9 @@ namespace MyOnlineShop.Order.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<Guid?>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTimeOffset>("PricedAtUtc")
                         .HasColumnType("datetimeoffset");
 

@@ -1,12 +1,12 @@
 # Refund Processing — Phase 11
 
-Refund coordination owns `refund.Refunds` and its migration history in a small Onion module (Domain, Contracts, Application, Infrastructure). This is a separate scheduling/consistency responsibility: Wallet remains the sole owner of balances and financial ledger entries. No public refund-issuing endpoint, Payment implementation, gateway, Shipping, Redis or infrastructure installation is added.
+Refund coordination owns `refund.Refunds` and its migration history in a small Onion module (Domain, Contracts, Application, Infrastructure). Wallet remains the sole owner of balances and financial ledger entries. No public refund-issuing endpoint is exposed.
 
 ## Current dependency limitation
 
-Phase 8 Payment is absent. `IRefundPaymentEvidence` is a read-only **future integration contract**, not a Payment implementation. No production adapter or fake verification is registered. Refund requests can be recorded durably from the existing Inventory failure contract, but the scheduler leaves them Pending without exactly one authoritative adapter. Completion also refuses credit without that adapter. The true Payment -> Inventory -> refund -> Wallet end-to-end test is explicitly blocked.
+Phase 8 now registers `IRefundPaymentEvidence` backed by persisted server-verified Payment records and claimed Inventory-refund eligibility. The shortage consumer atomically claims that eligibility and fails the unfulfilled Order while creating the durable Refund request. The existing scheduler, delay and stable Wallet credit/recovery flow are reused. Payment records Refunded through a separate refund-completed consumer. See [PAYMENT.md](PAYMENT.md). A real gateway adapter is not configured, and real Payment -> Inventory -> refund -> Wallet end-to-end validation remains skipped; simulated provider tests are not gateway evidence.
 
-Phase 8 must implement evidence backed by successful, server-verified payment records, preserving payment state and validating PaymentId, OrderId, owner, actual amount and currency. The adapter must return evidence only for a verified successful payment eligible for this full Inventory refund, with no competing refund or reversal. No client claims or the payment event's ActorId establish the refund recipient. This phase supports one full refund per PaymentId; partial, split/multiple-source payment allocation and competing refund workflows are outside its scope.
+Evidence validates PaymentId, OrderId, owner, actual amount and currency. No client claims or the payment event's ActorId establish the refund recipient. This workflow supports one full Inventory-shortage refund per PaymentId; partial, split/multiple-source payments and competing external reversal workflows are outside its scope. Refund into an existing Wallet with another currency requires an approved policy; it fails safely rather than performing implicit FX.
 
 ## Durable flow and transaction ownership
 
@@ -60,7 +60,7 @@ Available tests use explicit InMemory transaction/store substitutes and test-onl
 
 Five SQL tests are implemented and skipped unless `REFUND_TEST_SQL_SERVER` is supplied for a future explicitly authorized run: Refund/Outbox rollback, concurrent requests and unique keys, failure Inbox/request atomicity, concurrent due scheduling and duplicate credit delivery, and Wallet commit followed by Refund rollback/Inbox retry. The fixture prohibits LocalDB and touches only its checked GUID-named disposable test database. It does not run on this machine.
 
-The existing Messaging RabbitMQ integration test now includes duplicate persistent `refunds.due.v1` messages with preserved IDs; it remains skipped without `MESSAGING_TEST_RABBITMQ`. True Payment end-to-end coverage is separately blocked by absent Phase 8 and is not replaced with a fake Payment module.
+The existing Messaging RabbitMQ integration test includes duplicate persistent `refunds.due.v1` messages with preserved IDs; it remains skipped without `MESSAGING_TEST_RABBITMQ`. True Payment end-to-end coverage remains blocked by the unconfigured real gateway and unauthorized live infrastructure. Historical Phase 11 counts below precede Phase 8; current validation is recorded in PROJECT_STATUS.md.txt.
 
 `InitialRefund` and `artifacts/refund-migration.sql` are generated/reviewed offline. No migration is applied, persistent local database accessed/modified or SQL Server/LocalDB/Docker/RabbitMQ service installed or started.
 

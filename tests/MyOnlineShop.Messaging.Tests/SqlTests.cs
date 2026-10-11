@@ -88,7 +88,10 @@ public sealed class MessagingSqlFixture : IAsyncLifetime
     public async Task<ConsumptionDisposition> Process(MessageEnvelope envelope)
     {
         using var scope = Provider.CreateScope(); var services = scope.ServiceProvider; services.GetRequiredService<MessageRequestContext>().CorrelationId = envelope.CorrelationId;
-        return await services.GetRequiredService<IMessageProcessor>().ProcessAsync(services.GetServices<IMessageConsumer>().Single(), envelope, default);
+        // This legacy suite isolates Inbox/Inventory mechanics, not verified Payment orchestration.
+        // Payment.Tests supplies the production gate in its separately opt-in SQL workflow tests.
+        var consumer = new MyOnlineShop.Inventory.Application.PaymentSucceededConsumer(services.GetRequiredService<IInventoryDeduction>(), Clock);
+        return await services.GetRequiredService<IMessageProcessor>().ProcessAsync(consumer, envelope, default);
     }
     public async Task Enqueue(MessageEnvelope envelope)
     {

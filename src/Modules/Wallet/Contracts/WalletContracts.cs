@@ -46,3 +46,9 @@ public interface IWalletQueries
     Task<WalletDto> GetMyAsync(Guid userId, CancellationToken ct);
     Task<WalletTransactionsPage> GetMyTransactionsAsync(Guid userId, WalletTransactionsQuery query, CancellationToken ct);
 }
+// Trusted read-only payment/refund safety port; no alternative wallet or conversion is selected.
+public interface IWalletPaymentSafety
+{
+    Task<string?> GetPrimaryCurrencyAsync(Guid userId, CancellationToken ct);
+    Task<WalletTransactionDto?> FindPostedCreditAsync(Guid userId, Guid idempotencyKey, CancellationToken ct);
+}

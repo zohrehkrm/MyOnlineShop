@@ -7,12 +7,12 @@ using MyOnlineShop.Pricing.Contracts;
 
 namespace MyOnlineShop.Inventory.Application;
 
-public sealed class PaymentSucceededConsumer(IInventoryDeduction deduction, TimeProvider clock) : IMessageConsumer
+public sealed class PaymentSucceededConsumer(IInventoryDeduction deduction, TimeProvider clock, IInventoryPaymentOrchestration? orchestration = null) : IMessageConsumer
 {
     public string ConsumerName => "inventory.payment-succeeded.v1";
     public string EventType => "payments.succeeded";
     public int Version => 1;
-    public IReadOnlyList<string> TransactionParticipants => ["inventory"];
+    public IReadOnlyList<string> TransactionParticipants => orchestration is null ? ["inventory"] : ["inventory", "payment", "ordering"];
     public static Guid OperationId(Guid paymentId, PaymentStockLine line) =>
         new(SHA256.HashData(Encoding.UTF8.GetBytes($"payment-stock:{paymentId:N}:{line.WarehouseId:N}:{line.ProductVariantId:N}")).AsSpan(0, 16));
     public async Task<IIntegrationEvent?> HandleAsync(MessageEnvelope envelope, CancellationToken ct)
@@ -26,6 +26,7 @@ public sealed class PaymentSucceededConsumer(IInventoryDeduction deduction, Time
             throw new InvalidMessageException();
         try { MoneyRules.Amount(payment.Amount, payment.Currency, zeroAllowed: true); }
         catch (MoneyRuleException) { throw new InvalidMessageException(); }
+        if (orchestration is not null) await orchestration.ValidateAsync(payment, ct);
         foreach (var line in payment.StockLines.OrderBy(value => value.WarehouseId).ThenBy(value => value.ProductVariantId))
         {
             try
@@ -42,6 +43,7 @@ public sealed class PaymentSucceededConsumer(IInventoryDeduction deduction, Time
                 return new InventoryUnavailableIntegrationEventV1(failureId, clock.GetUtcNow(), payment.PaymentId, payment.OrderId, "StockUnavailable");
             }
         }
+        if (orchestration is not null) await orchestration.ConfirmAsync(payment, ct);
         return null;
     }
 }

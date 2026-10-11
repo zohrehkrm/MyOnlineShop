@@ -76,18 +76,22 @@ public sealed class RefundScheduler(IRefundStore store, IRefundUnitOfWork unit, 
 }
 
 public sealed class RefundCompletion(IRefundStore store, IRefundUnitOfWork unit, IWalletOperations wallet,
-    IEnumerable<IRefundPaymentEvidence> evidence, IOutboxWriter outbox, IOptions<RefundProcessingOptions> options, TimeProvider clock)
+    IEnumerable<IRefundPaymentEvidence> evidence, IOutboxWriter outbox, IOptions<RefundProcessingOptions> options, TimeProvider clock,
+    IWalletPaymentSafety walletSafety)
 {
     public Task ProcessAsync(Guid refundId, int attempt, CancellationToken ct) => unit.ExecuteAsync(async token =>
     {
         var candidate = await store.GetAsync(refundId, token) ?? throw new InvalidMessageException();
+        var paymentReader = evidence.SingleOrDefault();
+        // Match shortage preparation's Payment -> Refund lock order; hold this through wallet posting/readback.
+        if (paymentReader is not null) await paymentReader.AcquireCreditLockAsync(candidate.PaymentId, token);
         await unit.LockAsync(candidate.PaymentId, token);
         var refund = await store.GetAsync(refundId, token) ?? throw new InvalidMessageException();
         if (refund.Status == RefundStatus.Completed) return;
         if (attempt < refund.AttemptCount) return; // An obsolete retry delivery cannot start another credit.
         if (refund.Status != RefundStatus.Processing || attempt != refund.AttemptCount || clock.GetUtcNow() < refund.DueAtUtc)
             throw new InvalidMessageException();
-        var reader = evidence.SingleOrDefault() ?? throw new RefundDependencyUnavailableException();
+        var reader = paymentReader ?? throw new RefundDependencyUnavailableException();
         VerifiedRefundPayment? proof;
         try { proof = await reader.GetSucceededPaymentAsync(refund.PaymentId, token); }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
@@ -96,17 +100,20 @@ public sealed class RefundCompletion(IRefundStore store, IRefundUnitOfWork unit,
         if (proof.PaymentId != refund.PaymentId || proof.OrderId != refund.OrderId || proof.UserId != refund.UserId ||
             proof.Amount != refund.Amount || proof.Currency != refund.Currency)
         { await FailAsync(refund, "PaymentEvidenceMismatch", token); return; }
+        var posted = await walletSafety.FindPostedCreditAsync(refund.UserId, refund.IdempotencyKey, token);
+        if (posted is null && proof.ReconciliationRequired)
+        { await FailAsync(refund, "PaymentReconciliationRequired", token); return; }
         WalletTransactionDto ledger;
         try
         {
             // Wallet retains its own atomic transaction. Stable input recovers a crash after wallet commit.
-            ledger = await wallet.CreditAsync(refund.UserId, refund.UserId, new WalletOperation { IdempotencyKey = refund.IdempotencyKey,
+            ledger = posted ?? await wallet.CreditAsync(refund.UserId, refund.UserId, new WalletOperation { IdempotencyKey = refund.IdempotencyKey,
                 Amount = refund.Amount, Currency = refund.Currency, ReferenceType = "InventoryRefund", ReferenceId = refund.PaymentId.ToString("N"),
                 Description = "Refund for unavailable inventory" }, token);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
         catch { await FailAsync(refund, "WalletCreditFailed", token); return; }
-        if (ledger.IdempotencyKey != refund.IdempotencyKey || ledger.Amount != refund.Amount || ledger.Currency != refund.Currency || ledger.Type != "Credit" ||
+        if (ledger.Id == Guid.Empty || ledger.ActorId != refund.UserId || ledger.IdempotencyKey != refund.IdempotencyKey || ledger.Amount != refund.Amount || ledger.Currency != refund.Currency || ledger.Type != "Credit" ||
             ledger.Status != "Posted" || ledger.ReferenceType != "InventoryRefund" || ledger.ReferenceId != refund.PaymentId.ToString("N"))
             throw new InvalidOperationException("Wallet refund result did not match the posting request.");
         refund.Complete(ledger.Id, clock.GetUtcNow()); await store.SaveAsync(token);

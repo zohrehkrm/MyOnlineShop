@@ -112,6 +112,6 @@ public sealed class MessagingTests
         Assert.Throws<InvalidMessageException>(() => (envelope with { EventType = "System.Arbitrary,Assembly" }).Validate());
         Assert.Throws<InvalidMessageException>(() => (envelope with { Version = 0 }).Validate());
     }
-    [Fact(Skip = "Blocked: Phase 8 Payment producer/verification is not implemented. No fake Payment implementation is introduced.")]
-    public void Verified_payment_to_outbox_to_broker_to_inventory_end_to_end_requires_Phase_8() => throw new NotSupportedException("Phase 8 producer pending.");
+    [Fact(Skip = "Blocked: real gateway verification and authorized SQL/RabbitMQ infrastructure are unavailable. Simulated provider tests are not real Payment E2E.")]
+    public void Verified_payment_to_outbox_to_broker_to_inventory_end_to_end_requires_Phase_8() => throw new NotSupportedException("Real gateway E2E pending.");
 }

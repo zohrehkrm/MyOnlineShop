@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using MyOnlineShop.BuildingBlocks.Abstractions.Messaging;
 using MyOnlineShop.Order.Contracts;
 using MyOnlineShop.Refund.Application;
@@ -21,10 +22,12 @@ internal sealed class Orders : IOrderRefundSnapshots
     public OrderRefundSnapshot? Snapshot { get; set; }
     public Task<OrderRefundSnapshot?> GetAsync(Guid id, CancellationToken ct) => Task.FromResult(Snapshot?.OrderId == id ? Snapshot : null);
 }
-// Evidence exists only in tests. Production has no Phase 8 adapter and never substitutes this.
+// Explicit test-only evidence. Production uses persisted Payment evidence and transaction-scoped credit exclusion.
 internal sealed class Evidence : IRefundPaymentEvidence
 {
     public VerifiedRefundPayment? Proof { get; set; }
+    public Action? OnCreditLock { get; set; }
+    public Task AcquireCreditLockAsync(Guid id, CancellationToken ct) { OnCreditLock?.Invoke(); return Task.CompletedTask; }
     public Task<VerifiedRefundPayment?> GetSucceededPaymentAsync(Guid id, CancellationToken ct) => Task.FromResult(Proof);
 }
 internal sealed class Outbox : IOutboxWriter
@@ -84,7 +87,8 @@ internal sealed class Harness : IDisposable
     public Guid RefundId => RefundAggregate.StableId("inventory-refund", Payment);
     public RefundRequests Requests => new(Store, Unit, Orders, Outbox, Microsoft.Extensions.Options.Options.Create(Options), Clock);
     public RefundScheduler Scheduler(bool hasEvidence = true) => new(Store, Unit, Outbox, hasEvidence ? [Evidence] : [], Microsoft.Extensions.Options.Options.Create(Options), Clock);
-    public RefundCompletion Completion(bool hasEvidence = true) => new(Store, Unit, Credits, hasEvidence ? [Evidence] : [], Outbox, Microsoft.Extensions.Options.Options.Create(Options), Clock);
+    public RefundCompletion Completion(bool hasEvidence = true) => new(Store, Unit, Credits, hasEvidence ? [Evidence] : [], Outbox, Microsoft.Extensions.Options.Options.Create(Options), Clock,
+        Wallet.Services.GetRequiredService<IWalletPaymentSafety>());
     public Harness()
     {
         Store = new(Db); Unit = new(Db); Credits = new(Wallet.Operations);

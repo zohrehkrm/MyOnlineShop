@@ -27,6 +27,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IWalletStore, WalletStore>(); services.AddScoped<IWalletUnitOfWork, WalletUnitOfWork>();
         services.AddScoped<IWalletQueries, WalletReadStore>(); services.AddScoped<IWalletOperations, WalletOperations>();
+        services.AddScoped<IWalletPaymentSafety, WalletReadStore>();
         services.AddScoped<IWalletAdministration, WalletAdministration>();
         services.AddScoped<IWalletReportSource, WalletReporting>();
         return services;

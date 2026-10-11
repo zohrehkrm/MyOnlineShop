@@ -1,6 +1,6 @@
 # Local Docker development
 
-Phase 17 supplies configuration and instructions only. No containers were started, images built, services contacted or migrations applied during validation. Phase 8 Payment is still absent; this environment cannot demonstrate verified Payment-to-Inventory/Order/Refund end-to-end behavior. See [HARDENING.md](HARDENING.md) for release blockers and [README.md](README.md) for module documentation.
+Phase 17 supplied configuration and instructions only. No containers were started, images built, services contacted or migrations applied during validation. Payment core/orchestration is now implemented, but its real gateway adapter is unconfigured and real Payment E2E remains unverified. See [PAYMENT.md](PAYMENT.md), [HARDENING.md](HARDENING.md) and [README.md](README.md).
 
 ## Prerequisites and images
 
@@ -75,7 +75,7 @@ docker compose -f compose.yaml -f compose.management.yaml up -d rabbitmq
 
 Visit `http://localhost:15672` with the configured non-guest credentials. Use the same two files for subsequent Compose commands managing that override. The RabbitMQ hostname stays stable for persistent node identity. The UI override publishes no AMQP or Redis port.
 
-After applying Messaging and participant migrations, set `MESSAGING_ENABLED=true` and recreate the API intentionally to enable the existing publisher/consumers. Settings bind the existing Inventory payment-success, Refund inventory-unavailable and Refund-due consumers, plus their dead-letter queues. `operational.audit.v1` durably routes existing Order/Refund events without inventing a new business consumer; monitor retention because it can accumulate messages. Topology is provisioned by the existing messaging implementation when enabled. Workers are disabled by default. `RefundProcessing__Enabled` and `BootstrapIdentityAdmin` are always false in this Compose configuration; the authoritative Payment/refund-evidence implementation remains pending. See [MESSAGING.md](MESSAGING.md), [REFUND.md](REFUND.md) and [IDENTITY.md](IDENTITY.md) before enabling/provisioning anything separately.
+After applying Messaging and participant migrations (including Order binding and Payment), set `MESSAGING_ENABLED=true` and recreate the API intentionally to enable the existing publisher/consumers. Settings bind Inventory payment-success, Refund inventory-unavailable, Refund-due and Payment refund-completed consumers, plus their dead-letter queues. `operational.audit.v1` durably routes existing Order/Refund events; monitor retention because it can accumulate messages. Topology is provisioned by the existing messaging implementation when enabled. Workers are disabled by default. `RefundProcessing__Enabled` and `BootstrapIdentityAdmin` are always false in this Compose configuration. Payment now supplies authoritative refund evidence, but real gateway verification and live orchestration remain unverified. See [PAYMENT.md](PAYMENT.md), [MESSAGING.md](MESSAGING.md), [REFUND.md](REFUND.md) and [IDENTITY.md](IDENTITY.md) before enabling/provisioning anything separately.
 
 Redis remains optional DTO caching. Set `REDIS_ENABLED=false` to disable API caching. Existing bounded timeout/failure fallback remains intact after startup; initial Compose startup still waits for Redis health even if caching is disabled. SQL remains authoritative for money, stock and checkout calculations. For a later authorized authenticated check:
 
@@ -108,7 +108,7 @@ dotnet ef database update --project src/Modules/Identity/Infrastructure --startu
 
 Create the `artifacts` directory if needed before script generation. Applying migrations can create the configured development database on the first update and subsequently changes its schema/data. Confirm the endpoint/database, inspect generated `Up`/`Down` and forward SQL, back up persistent data, and apply each owner context intentionally. Never delete/recreate the database, existing migrations or histories to repair a failure. Provision an administrator separately using the existing [Identity bootstrap workflow](IDENTITY.md), after Identity migrations; no default account is created by Docker.
 
-Use this explicit owner/context order for a new local environment (no Payment or Reporting database context exists):
+Use this explicit owner/context order for a new local environment (Reporting has no database context):
 
 | Context | `--project` |
 | --- | --- |
@@ -122,6 +122,7 @@ Use this explicit owner/context order for a new local environment (no Payment or
 | `MessagingDbContext` | `src/BuildingBlocks/Infrastructure` |
 | `OrderDbContext` | `src/Modules/Order/Infrastructure` |
 | `WalletDbContext` | `src/Modules/Wallet/Infrastructure` |
+| `PaymentDbContext` | `src/Modules/Payment/Infrastructure` |
 | `RefundDbContext` | `src/Modules/Refund/Infrastructure` |
 | `ShippingDbContext` | `src/Modules/Shipping/Infrastructure` |
 
@@ -141,11 +142,11 @@ Run all available database-free regression suites without starting dependencies:
 powershell -NoProfile -File scripts/Test-Regression.ps1 -ResultsDirectory artifacts/local-tests
 ```
 
-The existing runner clears infrastructure opt-in variables, disables external features/bootstrap, builds test projects serially and records TRX/accurate skip counts. See [HARDENING.md](HARDENING.md) for the 13 suites and deferred cases. Phase 17 reran only Foundation/Identity, which cover the affected host configuration/authentication surface: **49 passed, 0 failed, 14 SQL-dependent skips**, recorded in `artifacts/phase17-tests`. The API build passed with zero warnings/errors. Both Compose configurations, static Dockerfile/PowerShell checks, ports/volumes, empty secret placeholders and documentation links passed validation. The generator was not run to create real secrets, and no image was built or run. Unrelated module tests were not repeated.
+The runner clears infrastructure opt-in variables, disables external features/bootstrap, builds test projects serially and records TRX/accurate skip counts; Phase 8 adds Payment as its fourteenth suite. See [HARDENING.md](HARDENING.md) for historical Phase 16 evidence and deferred cases, and [PAYMENT.md](PAYMENT.md) for current Payment validation. Phase 17 reran only Foundation/Identity: **49 passed, 0 failed, 14 SQL-dependent skips**, recorded in `artifacts/phase17-tests`. Its API build and static configuration checks passed. No image was built or run.
 
 Future infrastructure tests need explicit approval and a disposable test endpoint. SQL suite opt-in variables include `FOUNDATION_TEST_SQL_SERVER`, `IDENTITY_TEST_SQL_SERVER`, `INVENTORY_TEST_SQL_SERVER`, `CART_TEST_SQL_SERVER`, `PRICING_TEST_SQL_SERVER`, `ORDER_TEST_SQL_SERVER`, `WALLET_TEST_SQL_SERVER`, `MESSAGING_TEST_SQL_SERVER`, `REFUND_TEST_SQL_SERVER`, `SHIPPING_TEST_SQL_SERVER` and `REPORTING_TEST_SQL_SERVER`. Run the relevant project with `dotnet test tests/MyOnlineShop.<Area>.Tests` only after reviewing its fixture. Most SQL fixtures create/migrate/delete their own GUID-named database and must not target production; Foundation performs a read-only connectivity check and Reporting expects a separately prepared fully migrated database. Do not use LocalDB or reset the application database.
 
-RabbitMQ uses `MESSAGING_TEST_RABBITMQ` JSON as documented in [MESSAGING.md](MESSAGING.md); Redis uses `REDIS_TEST_CONNECTION_STRING` as documented in [CACHING.md](CACHING.md). Host integration tests require an intentional localhost-only AMQP/Redis port override or execution within the Docker network; the management override does not provide that connectivity. Do not expose those ports publicly or reuse a production broker namespace. The database-free regression runner deliberately clears these values, so run opted-in integration suites separately. True Payment E2E cases remain blocked until Phase 8 is implemented.
+RabbitMQ uses `MESSAGING_TEST_RABBITMQ` JSON as documented in [MESSAGING.md](MESSAGING.md); Redis uses `REDIS_TEST_CONNECTION_STRING` as documented in [CACHING.md](CACHING.md). Host integration tests require an intentional localhost-only AMQP/Redis port override or execution within the Docker network; the management override does not provide that connectivity. Do not expose those ports publicly or reuse a production broker namespace. The database-free regression runner deliberately clears these values, so run opted-in integration suites separately. `PAYMENT_TEST_SQL_SERVER` enables the four prepared simulated-provider SQL tests only after authorization for their disposable database lifecycle. True Payment E2E cases remain blocked by the unconfigured real adapter and unverified live infrastructure.
 
 ## Troubleshooting
 
@@ -162,4 +163,4 @@ RabbitMQ uses `MESSAGING_TEST_RABBITMQ` JSON as documented in [MESSAGING.md](MES
 
 This configuration is local development only. Production needs a reviewed secret provider/rotation, TLS and trusted certificates, a reverse proxy with validated forwarded-header/HTTPS behavior, least-privilege SQL access, tested backups/recovery, durable audit/log retention, monitoring/alerting, rate limiting, resource limits, network restrictions, broker durability/recovery/dead-message operations, a controlled migration rollout and image/security review. None is claimed fully configured. No Kubernetes or cloud platform is introduced.
 
-Phase 8 Payment producer/verification, authoritative refund evidence, true Payment E2E and live SQL concurrency/rollback, broker confirms/recovery and Redis validation remain incomplete. Docker configuration does not resolve those release blockers.
+Payment core/producer/refund evidence are now implemented under simulated-provider tests. A real gateway adapter, real Payment E2E and live SQL concurrency/rollback, broker confirms/recovery and Redis validation remain incomplete. Docker configuration does not resolve those release blockers.

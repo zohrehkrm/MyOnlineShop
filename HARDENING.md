@@ -1,6 +1,6 @@
 # Phase 16 — Testing & Hardening
 
-Phase 16 stabilizes the existing modular monolith. It does not supply the missing Phase 8 Payment module or claim production readiness. Database-free tests provide evidence for application rules, API policies and infrastructure control flow; SQL transactions, row locking, uniqueness enforcement, broker confirms and Redis runtime behavior require separate authorized integration runs.
+Phase 16 stabilized the existing modular monolith; its evidence below is historical. Phase 8 now supplies Payment core, provider abstraction, persisted refund evidence and Order/Inventory orchestration; see [PAYMENT.md](PAYMENT.md) and PROJECT_STATUS.md.txt for current validation. No real gateway adapter is configured and production readiness is not claimed. Database-free tests cannot prove SQL transactions, row locking, uniqueness enforcement, broker confirms or Redis runtime behavior.
 
 ## Regression strategy
 
@@ -60,10 +60,10 @@ No infrastructure was installed, started or contacted and no database was modifi
 
 ## Remaining release blockers and limits
 
-Phase 8 Payment remains unimplemented. Verified payment production/amount verification, the paid-Order producer path, true Payment E2E validation, verified-payment reports and authoritative production refund evidence are pending. Phase 16 does not change that status.
+Payment core/amount verification, producer, paid-Order orchestration and authoritative refund evidence are now implemented under simulated-provider tests. A real gateway adapter, real Payment E2E and verified-payment reporting remain pending; reporting was not expanded in Phase 8. Historical missing-Payment entries above describe Phase 16's original scope.
 
 SQL concurrency and atomic rollback tests have not run here; InMemory/test doubles cannot establish oversell prevention, database transaction behavior or rowversion correctness. Broker publisher-confirm/connection recovery and real Redis behavior are likewise unverified. These are release blockers for relying on the corresponding production flows, not successful integration validation.
 
 Metadata audit retention still depends on a configured logging sink and has a possible commit-to-log crash gap. Retry-exhausted Dead messages need an operational review/replay process; this phase adds no administrative replay workflow. Reporting reads remain independent snapshots, rather than a single cross-module transaction. External-service configuration, TLS/host/reverse-proxy policy, deployment secrets, load profiling and operational monitoring must be validated in the intended deployment environment.
 
-The next recommended work is the separately authorized Phase 8 Payment implementation, followed by authorized isolated infrastructure integration validation. No later phase is started here.
+Next work is to select/implement and validate a real gateway adapter, resolve warehouse and Wallet-currency policies, then run separately authorized isolated infrastructure and real Payment E2E validation. No production-ready claim is made.

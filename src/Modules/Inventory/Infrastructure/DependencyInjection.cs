@@ -35,7 +35,8 @@ public static class DependencyInjection
         services.AddScoped<WarehouseCommands>(); services.AddScoped<StockCommands>(); services.AddScoped<InventoryCommands>();
         services.AddScoped<IInventoryCommands>(provider => provider.GetRequiredService<InventoryCommands>());
         services.AddScoped<IInventoryDeduction>(provider => provider.GetRequiredService<InventoryCommands>());
-        services.AddScoped<IMessageConsumer, PaymentSucceededConsumer>();
+        services.AddScoped<IMessageConsumer>(provider => new PaymentSucceededConsumer(provider.GetRequiredService<IInventoryDeduction>(),
+            provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<IInventoryPaymentOrchestration>()));
         services.AddScoped<ILocalSqlTransactionParticipant>(provider => new LocalSqlTransactionParticipant<InventoryDbContext>(provider.GetRequiredService<InventoryDbContext>(), "inventory"));
         services.AddScoped<IInventoryReportSource, InventoryReporting>();
         return services;

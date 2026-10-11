@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using MyOnlineShop.BuildingBlocks.Abstractions.Messaging;
 using MyOnlineShop.BuildingBlocks.Infrastructure.Persistence;
 using MyOnlineShop.Refund.Application;
+using MyOnlineShop.Refund.Contracts;
 using MyOnlineShop.Refund.Infrastructure.Persistence;
 
 namespace MyOnlineShop.Refund.Infrastructure;
@@ -28,7 +29,10 @@ public static class DependencyInjection
         });
         services.AddScoped<IRefundStore, RefundStore>(); services.AddScoped<IRefundUnitOfWork, RefundUnitOfWork>();
         services.AddScoped<RefundRequests>(); services.AddScoped<RefundScheduler>(); services.AddScoped<RefundCompletion>();
-        services.AddScoped<IMessageConsumer, InventoryUnavailableConsumer>(); services.AddScoped<IMessageConsumer, RefundDueConsumer>();
+        services.AddScoped<IMessageConsumer>(provider => new InventoryUnavailableConsumer(provider.GetRequiredService<RefundRequests>(),
+            provider.GetRequiredService<IRefundPaymentPreparation>()));
+        services.AddScoped<IMessageConsumer>(provider => new RefundDueConsumer(provider.GetRequiredService<RefundCompletion>(),
+            provider.GetServices<IRefundPaymentEvidence>()));
         services.AddScoped<ILocalSqlTransactionParticipant>(provider => new LocalSqlTransactionParticipant<RefundDbContext>(provider.GetRequiredService<RefundDbContext>(), "refund"));
         // Phase 8 must register IRefundPaymentEvidence. Absence is an explicit production processing blocker.
         if (configuration.GetValue<bool>("RefundProcessing:Enabled")) services.AddHostedService<RefundWorker>();

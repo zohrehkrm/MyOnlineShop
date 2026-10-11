@@ -44,7 +44,7 @@ Unpaid checkout checks current discount eligibility but does not redeem or consu
 | Shipped | Completed |
 | Completed, Cancelled, Failed | None |
 
-Checkout persists AwaitingPayment. Customers may cancel only their own Pending/AwaitingPayment orders. Cancellation of paid or terminal orders is rejected and performs no inventory/payment/refund action. Administrative status changes follow the same graph; requests to set Paid are always rejected. Paid is a domain state reserved for the later trusted verification workflow. Processing/Shipped/Completed transitions are status bookkeeping, with no Shipping integration.
+Checkout persists AwaitingPayment. Customers may cancel their own Pending/AwaitingPayment orders only before a Payment is bound. Bound orders cannot be cancelled or manually failed while payment is unresolved. Administrative requests to set Paid are always rejected. Phase 8 binds Payment through an Order-owned contract and confirms Paid only after server verification and Inventory deduction succeed in the same Inbox transaction. Verified-payment shortages claim the existing durable refund and fail the unfulfilled Order. See [PAYMENT.md](PAYMENT.md). Processing/Shipped/Completed transitions remain status bookkeeping; shipment transitions do not automatically advance Order.
 
 Creation and status changes append actor/action/UTC-time/correlation audit records in the same Order transaction. Root rowversion rejects concurrent stale status writes.
 

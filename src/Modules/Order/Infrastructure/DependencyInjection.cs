@@ -31,6 +31,8 @@ public static class DependencyInjection
         services.AddScoped<IOrderQueries>(provider => provider.GetRequiredService<IOrderReadStore>());
         services.AddScoped<IOrderCommands, OrderCommands>(); services.AddScoped<ICheckoutCommands, CheckoutCommands>();
         services.AddScoped<IOrderRefundSnapshots, OrderRefundSnapshots>();
+        services.AddScoped<IOrderPaymentWorkflow, OrderPaymentWorkflow>();
+        services.AddScoped<ILocalSqlTransactionParticipant>(provider => new LocalSqlTransactionParticipant<OrderDbContext>(provider.GetRequiredService<OrderDbContext>(), "ordering"));
         services.AddScoped<IOrderShippingSnapshots, OrderShippingSnapshots>();
         services.AddScoped<IOrderReportSource, OrderReporting>();
         return services;

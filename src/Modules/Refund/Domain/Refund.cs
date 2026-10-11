@@ -55,7 +55,7 @@ public sealed class Refund
     public void Retry(DateTimeOffset now, TimeSpan backoff, int maximumAttempts, string failureCode)
     {
         if (Status != RefundStatus.Processing || backoff <= TimeSpan.Zero || maximumAttempts < 1 ||
-            failureCode is not ("WalletCreditFailed" or "PaymentEvidenceUnavailable" or "PaymentEvidenceMismatch"))
+            failureCode is not ("WalletCreditFailed" or "PaymentEvidenceUnavailable" or "PaymentEvidenceMismatch" or "PaymentReconciliationRequired"))
             throw new RefundRuleException("Invalid refund failure transition.");
         FailureCode = failureCode;
         Status = failureCode == "PaymentEvidenceMismatch" || AttemptCount >= maximumAttempts ? RefundStatus.Failed : RefundStatus.Pending;

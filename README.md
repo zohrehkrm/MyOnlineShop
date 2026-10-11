@@ -6,7 +6,7 @@ ASP.NET Core .NET 10 modular monolith with module-owned SQL Server/EF Core persi
 * [Regression runner, security evidence and release blockers](HARDENING.md)
 * [Architecture](ARCHITECTURE.md.txt) and [current project status](PROJECT_STATUS.md.txt)
 * [Foundation/API conventions](FOUNDATION.md), [Identity](IDENTITY.md), [Catalog](CATALOG.md), [Inventory](INVENTORY.md), [Cart](CART.md)
-* [Pricing/Discount](PRICING_DISCOUNT.md), [Order](ORDER.md), [Wallet](WALLET.md), [Messaging](MESSAGING.md), [Refund](REFUND.md), [Shipping](SHIPPING.md)
+* [Pricing/Discount](PRICING_DISCOUNT.md), [Order](ORDER.md), [Payment](PAYMENT.md), [Wallet](WALLET.md), [Messaging](MESSAGING.md), [Refund](REFUND.md), [Shipping](SHIPPING.md)
 * [Caching](CACHING.md), [Reporting](REPORTING.md), [Admin/Warehouse APIs](ADMIN_WAREHOUSE.md)
 
-Phase 8 Payment is incomplete. Verified-payment integration, authoritative production refund evidence and live infrastructure/concurrency validation remain pending. Docker support is for local development; production readiness is not claimed.
+Payment core/provider abstraction and Order/Inventory/Refund orchestration are implemented under simulated-provider validation. A real gateway adapter and live infrastructure/concurrency/E2E validation remain pending. Docker support is for local development; production readiness is not claimed.
