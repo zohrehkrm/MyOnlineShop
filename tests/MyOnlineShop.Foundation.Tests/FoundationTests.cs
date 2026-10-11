@@ -175,7 +175,22 @@ public sealed class FoundationTests(FoundationFactory factory) : IClassFixture<F
         using var response = await client.GetAsync("/openapi/v1.json");
         response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.True(document.RootElement.GetProperty("paths").TryGetProperty("/api/v1/health", out _));
+        var root = document.RootElement;
+        Assert.Equal("MyOnlineShop API", root.GetProperty("info").GetProperty("title").GetString());
+        var bearer = root.GetProperty("components").GetProperty("securitySchemes").GetProperty("Bearer");
+        Assert.Equal("http", bearer.GetProperty("type").GetString());
+        Assert.Equal("bearer", bearer.GetProperty("scheme").GetString());
+        var paths = root.GetProperty("paths");
+        var secured = paths.GetProperty("/api/v1/identity/me").GetProperty("get");
+        Assert.True(secured.GetProperty("security")[0].TryGetProperty("Bearer", out _));
+        foreach (var publicOperation in new[]
+        {
+            paths.GetProperty("/api/v1/identity/login").GetProperty("post"),
+            paths.GetProperty("/api/v1/health").GetProperty("get")
+        })
+        {
+            Assert.False(publicOperation.TryGetProperty("security", out var security) && security.GetArrayLength() > 0);
+        }
         using var swagger = await client.GetAsync("/swagger/index.html");
         swagger.EnsureSuccessStatusCode();
     }

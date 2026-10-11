@@ -43,7 +43,7 @@ builder.Services.AddScoped<IRequestContext>(provider =>
     var message = provider.GetRequiredService<MessageRequestContext>();
     return string.IsNullOrEmpty(message.CorrelationId) ? new HttpRequestContext(provider.GetRequiredService<IHttpContextAccessor>()) : message;
 });
-builder.Services.AddOpenApi();
+builder.Services.AddApiDocumentation();
 
 var app = builder.Build();
 if (builder.Configuration.GetValue<bool>("BootstrapIdentityAdmin"))
