@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="invalid_credentials" xml:space="preserve"><value>ایمیل یا رمز عبور اشتباه است یا ورود به حساب در حال حاضر امکان‌پذیر نیست.</value></data>
+  <data name="invalid_refresh_token" xml:space="preserve"><value>توکن تمدید معتبر نیست یا منقضی شده است؛ دوباره وارد شوید.</value></data>
+  <data name="registration_conflict" xml:space="preserve"><value>ثبت‌نام با اطلاعات واردشده امکان‌پذیر نیست؛ اطلاعات را بررسی کنید.</value></data>
+  <data name="role_conflict" xml:space="preserve"><value>نقشی با این نام وجود دارد؛ نام دیگری انتخاب کنید.</value></data>
+  <data name="bootstrap_disabled" xml:space="preserve"><value>مدیر سیستم قبلاً ایجاد شده است.</value></data>
+  <data name="catalog_conflict" xml:space="preserve"><value>عملیات کاتالوگ با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="cart_concurrency" xml:space="preserve"><value>سبد خرید تغییر کرده است؛ آن را تازه‌سازی و دوباره تلاش کنید.</value></data>
+  <data name="payment_provider_unavailable" xml:space="preserve"><value>درگاه پرداخت یا تنظیمات ارسال در دسترس نیست.</value></data>
+  <data name="payment_persistence_conflict" xml:space="preserve"><value>ثبت وضعیت پرداخت با وضعیت فعلی سازگار نیست؛ دوباره تلاش کنید.</value></data>
+  <data name="payment_reconciliation_recording_failed" xml:space="preserve"><value>ثبت نتیجه تطبیق پرداخت انجام نشد؛ شناسه پیگیری را به پشتیبانی بدهید.</value></data>
+  <data name="payment_refund_currency" xml:space="preserve"><value>واحد پول بازپرداخت با پرداخت اصلی یکسان نیست.</value></data>
+  <data name="cart_validation" xml:space="preserve"><value>اطلاعات سبد خرید معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="cart_not_found" xml:space="preserve"><value>سبد خرید درخواستی پیدا نشد.</value></data>
+  <data name="cart_conflict" xml:space="preserve"><value>عملیات سبد خرید با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="cart_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="inventory_validation" xml:space="preserve"><value>اطلاعات موجودی معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="inventory_not_found" xml:space="preserve"><value>موجودی درخواستی پیدا نشد.</value></data>
+  <data name="inventory_conflict" xml:space="preserve"><value>عملیات موجودی با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="inventory_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="order_validation" xml:space="preserve"><value>اطلاعات سفارش معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="order_not_found" xml:space="preserve"><value>سفارش درخواستی پیدا نشد.</value></data>
+  <data name="order_conflict" xml:space="preserve"><value>عملیات سفارش با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="order_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="payment_validation" xml:space="preserve"><value>اطلاعات پرداخت معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="payment_not_found" xml:space="preserve"><value>پرداخت درخواستی پیدا نشد.</value></data>
+  <data name="payment_conflict" xml:space="preserve"><value>عملیات پرداخت با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="payment_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="pricing_validation" xml:space="preserve"><value>اطلاعات قیمت‌گذاری معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="pricing_not_found" xml:space="preserve"><value>قیمت‌گذاری درخواستی پیدا نشد.</value></data>
+  <data name="pricing_conflict" xml:space="preserve"><value>عملیات قیمت‌گذاری با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="pricing_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="discount_validation" xml:space="preserve"><value>اطلاعات تخفیف معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="discount_not_found" xml:space="preserve"><value>تخفیف درخواستی پیدا نشد.</value></data>
+  <data name="discount_conflict" xml:space="preserve"><value>عملیات تخفیف با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="discount_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="shipping_validation" xml:space="preserve"><value>اطلاعات ارسال معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="shipping_not_found" xml:space="preserve"><value>ارسال درخواستی پیدا نشد.</value></data>
+  <data name="shipping_conflict" xml:space="preserve"><value>عملیات ارسال با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="shipping_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="wallet_validation" xml:space="preserve"><value>اطلاعات کیف پول معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="wallet_not_found" xml:space="preserve"><value>کیف پول درخواستی پیدا نشد.</value></data>
+  <data name="wallet_conflict" xml:space="preserve"><value>عملیات کیف پول با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="wallet_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="catalog_validation" xml:space="preserve"><value>اطلاعات کاتالوگ معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="catalog_not_found" xml:space="preserve"><value>کاتالوگ درخواستی پیدا نشد.</value></data>
+  <data name="catalog_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="report_validation" xml:space="preserve"><value>اطلاعات گزارش معتبر نیست؛ مقادیر و وضعیت درخواست را بررسی کنید.</value></data>
+  <data name="report_not_found" xml:space="preserve"><value>گزارش درخواستی پیدا نشد.</value></data>
+  <data name="report_conflict" xml:space="preserve"><value>عملیات گزارش با وضعیت فعلی سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="report_user" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="price_not_found" xml:space="preserve"><value>قیمت معتبری برای کالا پیدا نشد.</value></data>
+</root>

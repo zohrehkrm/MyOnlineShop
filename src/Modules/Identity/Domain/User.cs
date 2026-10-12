@@ -8,6 +8,8 @@ public sealed class User
     public Guid Id { get; private set; }
     public string Email { get; private set; } = string.Empty;
     public string NormalizedEmail { get; private set; } = string.Empty;
+    public string? UserName { get; private set; }
+    public string? NormalizedUserName { get; private set; }
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string? PhoneNumber { get; private set; }
@@ -35,6 +37,13 @@ public sealed class User
     }
 
     public static string NormalizeEmail(string email) => email.Trim().ToUpperInvariant();
+    public void SetUserName(string? userName)
+    {
+        if (userName is not null && (string.IsNullOrWhiteSpace(userName) || userName.Length > 64))
+            throw new ArgumentException("Username must contain between 1 and 64 characters.");
+        UserName = userName;
+        NormalizedUserName = userName?.ToUpperInvariant();
+    }
     public void SetPasswordHash(string hash)
     {
         if (string.IsNullOrWhiteSpace(hash)) throw new ArgumentException("A password hash is required.");

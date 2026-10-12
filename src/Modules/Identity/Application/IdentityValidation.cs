@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using MyOnlineShop.Identity.Contracts;
+using MyOnlineShop.BuildingBlocks.Abstractions.Localization;
 
 namespace MyOnlineShop.Identity.Application;
 
@@ -7,17 +8,22 @@ public static class IdentityValidation
 {
     public static void Validate(object command)
     {
-        if (!Validator.TryValidateObject(command, new ValidationContext(command), [], true))
-            throw new IdentityException("validation_error", 400, "Identity input is invalid.");
+        var results = new List<ValidationResult>();
+        Validator.TryValidateObject(command, new ValidationContext(command), results, true);
         if (command is RegisterCommand registration)
         {
-            var password = registration.Password;
-            if (!password.Any(char.IsUpper) || !password.Any(char.IsLower) || !password.Any(char.IsDigit) ||
-                !password.Any(character => !char.IsLetterOrDigit(character) && !char.IsWhiteSpace(character)))
-                throw new IdentityException("validation_error", 400,
-                    "Password must contain uppercase and lowercase letters, a digit, and a symbol.");
-            if (string.IsNullOrWhiteSpace(registration.FirstName) || string.IsNullOrWhiteSpace(registration.LastName))
-                throw new IdentityException("validation_error", 400, "First name and last name are required.");
+            if (string.IsNullOrWhiteSpace(registration.FirstName))
+                results.Add(new ValidationResult(string.Format(ValidationMessages.Required, ValidationMessages.FirstName), [nameof(registration.FirstName)]));
+            if (string.IsNullOrWhiteSpace(registration.LastName))
+                results.Add(new ValidationResult(string.Format(ValidationMessages.Required, ValidationMessages.LastName), [nameof(registration.LastName)]));
+        }
+        if (results.Count > 0)
+        {
+            var errors = results.SelectMany(result => result.MemberNames.DefaultIfEmpty(string.Empty)
+                    .Select(member => (Member: member, Message: result.ErrorMessage ?? ValidationMessages.InvalidValue)))
+                .GroupBy(result => result.Member)
+                .ToDictionary(group => group.Key, group => group.Select(result => result.Message).Distinct().ToArray());
+            throw new IdentityException("validation_error", 400, ErrorMessages.HttpError("validation_error"), errors);
         }
     }
 }

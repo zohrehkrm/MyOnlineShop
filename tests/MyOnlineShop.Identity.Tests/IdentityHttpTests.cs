@@ -28,6 +28,8 @@ public sealed class IdentityHttpFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting("DatabaseInitialization:MigrateOnStartup", "false");
+        builder.UseSetting("IdentityBootstrap:Enabled", "false");
         // This provider configuration is used only for offline model/script checks; no connection is opened.
         builder.UseSetting("ConnectionStrings:SqlServer",
             "Server=localhost;Database=IdentityOfflineTests;Integrated Security=True");

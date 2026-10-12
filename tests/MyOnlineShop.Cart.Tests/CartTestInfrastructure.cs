@@ -71,6 +71,8 @@ public sealed class CartApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting("DatabaseInitialization:MigrateOnStartup", "false");
+        builder.UseSetting("IdentityBootstrap:Enabled", "false");
         builder.UseSetting("ConnectionStrings:SqlServer", "Server=localhost;Database=CartOffline;Integrated Security=True");
         builder.UseSetting("IdentitySecurity:SigningKeyBase64", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
         builder.ConfigureServices(services =>

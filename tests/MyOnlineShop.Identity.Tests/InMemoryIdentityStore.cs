@@ -36,6 +36,7 @@ public sealed class InMemoryIdentityStore : IIdentityStore
         finally { _gate.Release(); }
     }
     public Task<User?> FindUserByEmailAsync(string email, CancellationToken ct) => Task.FromResult(Users.Values.SingleOrDefault(user => user.NormalizedEmail == email));
+    public Task<User?> FindUserByNameAsync(string name, CancellationToken ct) => Task.FromResult(Users.Values.SingleOrDefault(user => user.NormalizedUserName == name));
     public Task<User?> LockUserAsync(Guid id, CancellationToken ct) => GetUserAsync(id, ct);
     public Task<User?> GetUserAsync(Guid id, CancellationToken ct) => Task.FromResult(Users.GetValueOrDefault(id));
     public Task<bool> PhoneExistsAsync(string phone, CancellationToken ct) => Task.FromResult(Users.Values.Any(user => user.PhoneNumber == phone));

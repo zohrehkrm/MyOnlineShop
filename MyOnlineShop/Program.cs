@@ -44,18 +44,21 @@ builder.Services.AddScoped<IRequestContext>(provider =>
     return string.IsNullOrEmpty(message.CorrelationId) ? new HttpRequestContext(provider.GetRequiredService<IHttpContextAccessor>()) : message;
 });
 builder.Services.AddApiDocumentation();
+builder.Services.Configure<DatabaseInitializationOptions>(builder.Configuration.GetSection("DatabaseInitialization"));
+builder.Services.AddScoped<IDatabaseMigrationRunner, EfDatabaseMigrationRunner>();
+builder.Services.AddScoped<DatabaseInitializer>();
 
 var app = builder.Build();
 if (builder.Configuration.GetValue<bool>("BootstrapIdentityAdmin"))
 {
-    using var scope = app.Services.CreateScope();
-    var command = builder.Configuration.GetSection("IdentityBootstrap")
-        .Get<MyOnlineShop.Identity.Contracts.RegisterCommand>()
-        ?? throw new InvalidOperationException("IdentityBootstrap must be supplied through secure configuration.");
-    await scope.ServiceProvider.GetRequiredService<MyOnlineShop.Identity.Contracts.IIdentityAdministration>()
-        .BootstrapAdministratorAsync(command, CancellationToken.None);
-    return;
+    throw new InvalidOperationException("Legacy BootstrapIdentityAdmin mode is retired. Use IdentityBootstrap:Enabled and a securely configured IdentityBootstrap:Password.");
 }
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<DatabaseInitializer>()
+        .InitializeAsync(app.Lifetime.ApplicationStopping);
+}
+app.UseRequestLocalization();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 app.UseStatusCodePages();

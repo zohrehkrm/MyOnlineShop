@@ -16,6 +16,7 @@ public interface IIdentityStore
 {
     Task<T> InTransactionAsync<T>(Func<CancellationToken, Task<T>> action, CancellationToken cancellationToken);
     Task<User?> FindUserByEmailAsync(string normalizedEmail, CancellationToken cancellationToken);
+    Task<User?> FindUserByNameAsync(string normalizedUserName, CancellationToken cancellationToken);
     Task<User?> LockUserAsync(Guid userId, CancellationToken cancellationToken);
     Task<bool> PhoneExistsAsync(string phone, CancellationToken cancellationToken);
     Task<SessionReference?> FindSessionAsync(string tokenHash, CancellationToken cancellationToken);

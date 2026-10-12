@@ -23,6 +23,8 @@ internal sealed class ReportsApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development"); builder.UseSetting("ConnectionStrings:SqlServer", "Server=localhost;Database=ReportingOffline;Integrated Security=True");
+        builder.UseSetting("DatabaseInitialization:MigrateOnStartup", "false");
+        builder.UseSetting("IdentityBootstrap:Enabled", "false");
         builder.UseSetting("IdentitySecurity:SigningKeyBase64", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
         builder.UseSetting("BootstrapIdentityAdmin", "false"); builder.UseSetting("Messaging:Enabled", "false");
         builder.UseSetting("RefundProcessing:Enabled", "false"); builder.UseSetting("Redis:Enabled", "false");

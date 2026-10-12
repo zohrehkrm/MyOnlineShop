@@ -33,7 +33,7 @@ dotnet ef migrations script --idempotent --project src/BuildingBlocks/Infrastruc
 dotnet ef migrations has-pending-model-changes --project src/BuildingBlocks/Infrastructure --startup-project MyOnlineShop --context FoundationDbContext -- --environment Development
 ```
 
-`InitialFoundation` is an empty baseline with a generated model snapshot. Its SQL script creates only the `foundation` schema and migration history table. Review generated SQL before applying it through a controlled deployment. API startup does not apply migrations, create databases or reset data. EF tools use the same host configuration and DI registration as runtime.
+`InitialFoundation` is an empty baseline with a generated model snapshot. Its SQL script creates only the `foundation` schema and migration history table. Review generated SQL before applying it through a controlled deployment. Configurable startup migration now creates a missing target and applies pending owner migrations before accepting requests; it defaults to enabled only in Development and never resets existing data. See [initialization, permissions and recovery](DATABASE_INITIALIZATION.md). EF tools use owner contexts and their configured migration histories; Identity additionally has an explicit offline design-time factory.
 
 ## Verification
 

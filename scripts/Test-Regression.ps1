@@ -1,4 +1,5 @@
-param([string]$ResultsDirectory = 'artifacts/phase16-tests', [switch]$SummarizeOnly)
+param([string]$ResultsDirectory = 'artifacts/phase16-tests', [switch]$SummarizeOnly,
+    [string]$BuildOutputDirectory, [switch]$NoRestore, [string]$StartAt = 'Foundation', [switch]$ContinueOnFailure)
 
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent $PSScriptRoot
@@ -10,9 +11,13 @@ $infrastructureVariables = @(
     'SHIPPING_TEST_SQL_SERVER', 'REDIS_TEST_CONNECTION_STRING', 'REPORTING_TEST_SQL_SERVER', 'PAYMENT_TEST_SQL_SERVER'
 )
 $previousVariables = @{}
-$disabledFeatures = @('Messaging__Enabled', 'RefundProcessing__Enabled', 'Redis__Enabled', 'BootstrapIdentityAdmin')
+$disabledFeatures = @('Messaging__Enabled', 'RefundProcessing__Enabled', 'Redis__Enabled', 'BootstrapIdentityAdmin',
+    'DatabaseInitialization__MigrateOnStartup', 'IdentityBootstrap__Enabled')
 $projects = @('Foundation', 'Identity', 'Catalog', 'Inventory', 'Cart', 'PricingDiscount', 'Order',
     'Payment', 'Wallet', 'Messaging', 'Refund', 'Shipping', 'Caching', 'Reporting')
+$startIndex = [Array]::IndexOf($projects, $StartAt)
+if ($startIndex -lt 0) { throw 'StartAt must identify an existing regression module.' }
+$projects = $projects[$startIndex..($projects.Count - 1)]
 $summary = @()
 try {
     Set-Location -LiteralPath $repository
@@ -30,8 +35,14 @@ try {
         $resultFile = "MyOnlineShop.$module.Tests.trx"
         # Builds one relevant test project at a time. Gated infrastructure tests compile and skip.
         if (-not $SummarizeOnly) {
-            & dotnet test $project --verbosity quiet --results-directory $results --logger "trx;LogFileName=$resultFile"
-            if ($LASTEXITCODE -ne 0) { throw "Regression failed for $module (exit $LASTEXITCODE). Review $resultFile." }
+            $testArguments = @('test', $project, '--verbosity', 'quiet', '--results-directory', $results,
+                '--logger', "trx;LogFileName=$resultFile")
+            if ($BuildOutputDirectory) {
+                $testArguments += @('--output', [IO.Path]::GetFullPath((Join-Path $repository $BuildOutputDirectory)))
+            }
+            if ($NoRestore) { $testArguments += '--no-restore' }
+            & dotnet @testArguments
+            if ($LASTEXITCODE -ne 0 -and -not $ContinueOnFailure) { throw "Regression failed for $module (exit $LASTEXITCODE). Review $resultFile." }
         }
         [xml]$report = Get-Content -LiteralPath (Join-Path $results $resultFile)
         $counts = $report.TestRun.ResultSummary.Counters
@@ -46,6 +57,7 @@ try {
     $summary | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $results 'summary.json') -Encoding UTF8
     Write-Output ("Passed: {0}; failed: {1}; skipped: {2}" -f
         ($summary | Measure-Object Passed -Sum).Sum, ($summary | Measure-Object Failed -Sum).Sum, ($summary | Measure-Object Skipped -Sum).Sum)
+    if (($summary | Measure-Object Failed -Sum).Sum -gt 0) { throw 'Regression contains failed tests; see summary.json and the TRX files.' }
 }
 finally {
     foreach ($name in $previousVariables.Keys) { [Environment]::SetEnvironmentVariable($name, $previousVariables[$name], 'Process') }

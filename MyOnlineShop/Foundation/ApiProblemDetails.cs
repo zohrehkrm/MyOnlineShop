@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using MyOnlineShop.BuildingBlocks.Abstractions.Localization;
 
 namespace MyOnlineShop.Foundation;
 
@@ -16,7 +17,9 @@ internal static class ApiProblemDetails
             { Status: 404 } => "not_found",
             { Status: 405 } => "method_not_allowed",
             { Status: >= 500 } => "internal_error",
+            { Status: 409 } => "conflict",
             _ => "request_error"
         };
+        problem.Title = ErrorMessages.HttpError((string)problem.Extensions["code"]!);
     }
 }

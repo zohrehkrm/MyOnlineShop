@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="validation_error" xml:space="preserve"><value>یک یا چند فیلد معتبر نیست؛ خطاهای هر فیلد را بررسی کنید.</value></data>
+  <data name="bad_request" xml:space="preserve"><value>درخواست معتبر نیست؛ اطلاعات ارسال‌شده را بررسی کنید.</value></data>
+  <data name="unauthorized" xml:space="preserve"><value>برای انجام این درخواست ابتدا وارد حساب کاربری شوید.</value></data>
+  <data name="forbidden" xml:space="preserve"><value>اجازه انجام این عملیات را ندارید.</value></data>
+  <data name="not_found" xml:space="preserve"><value>اطلاعات یا مسیر درخواستی پیدا نشد.</value></data>
+  <data name="method_not_allowed" xml:space="preserve"><value>این متد برای مسیر درخواستی پشتیبانی نمی‌شود.</value></data>
+  <data name="internal_error" xml:space="preserve"><value>خطای داخلی سرور رخ داد؛ دوباره تلاش کنید و در صورت تکرار، شناسه پیگیری را به پشتیبانی بدهید.</value></data>
+  <data name="request_error" xml:space="preserve"><value>درخواست انجام نشد؛ اطلاعات ارسالی را بررسی کنید.</value></data>
+  <data name="conflict" xml:space="preserve"><value>این عملیات با وضعیت فعلی اطلاعات سازگار نیست؛ اطلاعات را تازه‌سازی کنید.</value></data>
+  <data name="service_unavailable" xml:space="preserve"><value>سرویس موقتاً در دسترس نیست؛ بعداً دوباره تلاش کنید.</value></data>
+</root>

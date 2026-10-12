@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="validation_error" xml:space="preserve"><value>One or more fields are invalid; check the field errors.</value></data>
+  <data name="bad_request" xml:space="preserve"><value>The request is invalid; check the supplied data.</value></data>
+  <data name="unauthorized" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="forbidden" xml:space="preserve"><value>You do not have permission to perform this action.</value></data>
+  <data name="not_found" xml:space="preserve"><value>The requested resource or route was not found.</value></data>
+  <data name="method_not_allowed" xml:space="preserve"><value>This HTTP method is not supported for the requested route.</value></data>
+  <data name="internal_error" xml:space="preserve"><value>An internal server error occurred; retry and contact support with the correlation ID if it persists.</value></data>
+  <data name="request_error" xml:space="preserve"><value>The request could not be completed; check the supplied data.</value></data>
+  <data name="conflict" xml:space="preserve"><value>This action conflicts with the current state; reload the data.</value></data>
+  <data name="service_unavailable" xml:space="preserve"><value>The service is temporarily unavailable; try again later.</value></data>
+</root>

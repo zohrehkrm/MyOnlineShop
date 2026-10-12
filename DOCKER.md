@@ -87,7 +87,7 @@ See [CACHING.md](CACHING.md) for expiry/invalidation/fallback guarantees. Do not
 
 ## EF Core and database setup
 
-No automatic startup migration or database reset is configured. All contexts use the same configured SQL Server database, with module-owned schemas and migration histories. Compose health establishes instance availability, not schema readiness.
+Development startup now applies pending migrations by default, using the ordered owner plan in [DATABASE_INITIALIZATION.md](DATABASE_INITIALIZATION.md). Set `DatabaseInitialization__MigrateOnStartup=false` when using externally applied migrations; Production defaults to disabled and requires explicit opt-in. No database reset is configured. All contexts use the same configured SQL Server database, with module-owned schemas and migration histories. Compose health establishes instance availability, not schema readiness.
 
 **Host tooling does not load `.env`.** Set the following process environment values securely in the terminal used for EF tooling, without displaying them:
 

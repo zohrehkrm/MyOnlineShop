@@ -1,5 +1,7 @@
 # PROJECT_STATUS.md
 
+> Historical phase results. Current initialization and bootstrap status is recorded in [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
 ## Current Phase
 
 Phase 8 — Focused Payment Safety Remediation

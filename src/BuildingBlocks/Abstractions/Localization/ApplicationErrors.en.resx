@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <data name="invalid_credentials" xml:space="preserve"><value>The email or password is incorrect, or sign-in is currently unavailable for this account.</value></data>
+  <data name="invalid_refresh_token" xml:space="preserve"><value>The refresh token is invalid or expired; sign in again.</value></data>
+  <data name="registration_conflict" xml:space="preserve"><value>Registration could not be completed with the supplied details.</value></data>
+  <data name="role_conflict" xml:space="preserve"><value>A role with this name already exists; choose another name.</value></data>
+  <data name="bootstrap_disabled" xml:space="preserve"><value>An administrator already exists.</value></data>
+  <data name="catalog_conflict" xml:space="preserve"><value>Catalog action conflicts with the current state; reload the data.</value></data>
+  <data name="cart_concurrency" xml:space="preserve"><value>The cart has changed; reload it and retry.</value></data>
+  <data name="payment_provider_unavailable" xml:space="preserve"><value>The payment provider or fulfillment configuration is unavailable.</value></data>
+  <data name="payment_persistence_conflict" xml:space="preserve"><value>Recording the payment conflicts with its current state; retry.</value></data>
+  <data name="payment_reconciliation_recording_failed" xml:space="preserve"><value>The payment reconciliation result could not be recorded; contact support with the correlation ID.</value></data>
+  <data name="payment_refund_currency" xml:space="preserve"><value>The refund currency does not match the original payment currency.</value></data>
+  <data name="cart_validation" xml:space="preserve"><value>Cart input is invalid; check the values and request state.</value></data>
+  <data name="cart_not_found" xml:space="preserve"><value>Cart resource was not found.</value></data>
+  <data name="cart_conflict" xml:space="preserve"><value>Cart action conflicts with the current state; reload the data.</value></data>
+  <data name="cart_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="inventory_validation" xml:space="preserve"><value>Inventory input is invalid; check the values and request state.</value></data>
+  <data name="inventory_not_found" xml:space="preserve"><value>Inventory resource was not found.</value></data>
+  <data name="inventory_conflict" xml:space="preserve"><value>Inventory action conflicts with the current state; reload the data.</value></data>
+  <data name="inventory_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="order_validation" xml:space="preserve"><value>Order input is invalid; check the values and request state.</value></data>
+  <data name="order_not_found" xml:space="preserve"><value>Order resource was not found.</value></data>
+  <data name="order_conflict" xml:space="preserve"><value>Order action conflicts with the current state; reload the data.</value></data>
+  <data name="order_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="payment_validation" xml:space="preserve"><value>Payment input is invalid; check the values and request state.</value></data>
+  <data name="payment_not_found" xml:space="preserve"><value>Payment resource was not found.</value></data>
+  <data name="payment_conflict" xml:space="preserve"><value>Payment action conflicts with the current state; reload the data.</value></data>
+  <data name="payment_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="pricing_validation" xml:space="preserve"><value>Pricing input is invalid; check the values and request state.</value></data>
+  <data name="pricing_not_found" xml:space="preserve"><value>Pricing resource was not found.</value></data>
+  <data name="pricing_conflict" xml:space="preserve"><value>Pricing action conflicts with the current state; reload the data.</value></data>
+  <data name="pricing_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="discount_validation" xml:space="preserve"><value>Discount input is invalid; check the values and request state.</value></data>
+  <data name="discount_not_found" xml:space="preserve"><value>Discount resource was not found.</value></data>
+  <data name="discount_conflict" xml:space="preserve"><value>Discount action conflicts with the current state; reload the data.</value></data>
+  <data name="discount_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="shipping_validation" xml:space="preserve"><value>Shipping input is invalid; check the values and request state.</value></data>
+  <data name="shipping_not_found" xml:space="preserve"><value>Shipping resource was not found.</value></data>
+  <data name="shipping_conflict" xml:space="preserve"><value>Shipping action conflicts with the current state; reload the data.</value></data>
+  <data name="shipping_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="wallet_validation" xml:space="preserve"><value>Wallet input is invalid; check the values and request state.</value></data>
+  <data name="wallet_not_found" xml:space="preserve"><value>Wallet resource was not found.</value></data>
+  <data name="wallet_conflict" xml:space="preserve"><value>Wallet action conflicts with the current state; reload the data.</value></data>
+  <data name="wallet_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="catalog_validation" xml:space="preserve"><value>Catalog input is invalid; check the values and request state.</value></data>
+  <data name="catalog_not_found" xml:space="preserve"><value>Catalog resource was not found.</value></data>
+  <data name="catalog_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="report_validation" xml:space="preserve"><value>Report input is invalid; check the values and request state.</value></data>
+  <data name="report_not_found" xml:space="preserve"><value>Report resource was not found.</value></data>
+  <data name="report_conflict" xml:space="preserve"><value>Report action conflicts with the current state; reload the data.</value></data>
+  <data name="report_user" xml:space="preserve"><value>Sign in to perform this request.</value></data>
+  <data name="price_not_found" xml:space="preserve"><value>No valid price was found for the product.</value></data>
+</root>

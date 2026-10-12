@@ -46,6 +46,16 @@ public static class DependencyInjection
         });
         services.Configure<PasswordHasherOptions>(options => options.IterationCount = 600_000);
         services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+        services.AddIdentityCore<User>(options =>
+        {
+            options.Password.RequiredLength = 8;
+            options.Password.RequireUppercase = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireDigit = true;
+            options.Password.RequireNonAlphanumeric = true;
+        }).AddUserStore<BootstrapUserStore>().AddPasswordValidator<BootstrapPasswordValidator>();
+        services.AddOptions<DefaultAdministratorOptions>().Bind(configuration.GetSection("IdentityBootstrap"));
+        services.AddScoped<IDefaultAdministratorBootstrap, DefaultAdministratorBootstrap>();
         services.AddSingleton<IIdentityPasswords, IdentityPasswords>();
         services.AddSingleton<IIdentityTokens, IdentityTokens>();
         services.AddScoped<IIdentityStore, IdentityStore>();

@@ -9,7 +9,8 @@ namespace MyOnlineShop.Identity.Tests;
 public sealed class IdentityValidationTests
 {
     [Theory]
-    [InlineData("short1!A")]
+    [InlineData("Shrt1!A")]
+    [InlineData("Test 12!")]
     [InlineData("alllowercase123!")]
     [InlineData("ALLUPPERCASE123!")]
     [InlineData("NoDigitsPassword!")]
@@ -43,6 +44,15 @@ public sealed class IdentityValidationTests
         IdentityValidation.Validate(new RegisterCommand
         {
             FirstName = "Test", LastName = "User", Email = "test@example.test", Password = IdentityFactory.TestPassword
+        });
+    }
+
+    [Fact]
+    public void Eight_character_password_is_accepted()
+    {
+        IdentityValidation.Validate(new RegisterCommand
+        {
+            FirstName = "Test", LastName = "User", Email = "test@example.test", Password = "Test123!"
         });
     }
 

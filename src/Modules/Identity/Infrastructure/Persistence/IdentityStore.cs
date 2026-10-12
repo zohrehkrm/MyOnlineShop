@@ -35,6 +35,8 @@ internal sealed class IdentityStore(IdentityDbContext context) : IIdentityStore
 
     public Task<User?> FindUserByEmailAsync(string email, CancellationToken ct) =>
         context.Users.AsNoTracking().SingleOrDefaultAsync(user => user.NormalizedEmail == email, ct);
+    public Task<User?> FindUserByNameAsync(string name, CancellationToken ct) =>
+        context.Users.AsNoTracking().SingleOrDefaultAsync(user => user.NormalizedUserName == name, ct);
     public Task<User?> GetUserAsync(Guid userId, CancellationToken ct) =>
         context.Users.AsNoTracking().SingleOrDefaultAsync(user => user.Id == userId, ct);
     public Task<User?> LockUserAsync(Guid userId, CancellationToken ct) =>

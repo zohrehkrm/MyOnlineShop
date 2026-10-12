@@ -24,6 +24,8 @@ public sealed class FoundationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting("DatabaseInitialization:MigrateOnStartup", "false");
+        builder.UseSetting("IdentityBootstrap:Enabled", "false");
         builder.UseSetting("ConnectionStrings:SqlServer",
             "Server=localhost;Database=FoundationOfflineTests;Integrated Security=True");
         builder.UseSetting("IdentitySecurity:SigningKeyBase64", Convert.ToBase64String(
@@ -45,6 +47,19 @@ public sealed class FoundationProbeController : ControllerBase
 {
     [HttpGet("throw")]
     public IActionResult Throw() => throw new InvalidOperationException("secret-password");
+
+    [HttpGet("application-error")]
+    public IActionResult ApplicationError() => throw MyOnlineShop.Identity.Application.IdentityException.InvalidCredentials();
+
+    [HttpGet("application-validation")]
+    public IActionResult ApplicationValidation()
+    {
+        MyOnlineShop.Identity.Application.IdentityValidation.Validate(new MyOnlineShop.Identity.Contracts.RegisterCommand
+        {
+            FirstName = "Test", LastName = "User", Email = "test@example.test", Password = "asdfg"
+        });
+        return Ok();
+    }
 
     [HttpGet("db-error")]
     public IActionResult DatabaseError() => throw new DbUpdateException("Server=private-server;Password=private-secret");

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using MyOnlineShop.BuildingBlocks.Abstractions;
+using MyOnlineShop.BuildingBlocks.Abstractions.Localization;
 
 namespace MyOnlineShop.Foundation;
 
@@ -15,16 +16,19 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         // Exception messages may contain secrets or personal data; log safe metadata only.
         logger.LogError("Request failed with {ExceptionType} and {StatusCode}",
             exception.GetType().Name, status);
-        var problem = new ProblemDetails
-        {
-            Status = status,
-            Title = applicationError?.SafeMessage ?? (status == 500 ? "An unexpected error occurred." : "The request could not be processed."),
-            Type = $"https://httpstatuses.io/{status}"
-        };
+        ProblemDetails problem = applicationError is IApplicationValidationError { Errors.Count: > 0 } validation
+            ? new ValidationProblemDetails(validation.Errors.ToDictionary(entry => entry.Key, entry => entry.Value))
+            : new ProblemDetails();
+        problem.Status = status;
+        problem.Type = $"https://httpstatuses.io/{status}";
         ApiProblemDetails.Enrich(context, problem);
-        if (applicationError is not null) problem.Extensions["code"] = applicationError.Code;
+        if (applicationError is not null)
+        {
+            problem.Extensions["code"] = applicationError.Code;
+            problem.Title = ErrorMessages.ApplicationError(applicationError.Code, status);
+        }
         context.Response.StatusCode = status;
-        await context.Response.WriteAsJsonAsync(problem, options: null,
+        await context.Response.WriteAsJsonAsync(problem, problem.GetType(), options: null,
             contentType: "application/problem+json", cancellationToken: cancellationToken);
         return true;
     }

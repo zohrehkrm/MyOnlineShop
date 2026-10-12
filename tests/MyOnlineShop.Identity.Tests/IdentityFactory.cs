@@ -42,6 +42,8 @@ public sealed class IdentityFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         var connection = new SqlConnectionStringBuilder(_masterConnection) { InitialCatalog = _databaseName };
         builder.UseEnvironment("Development");
+        builder.UseSetting("DatabaseInitialization:MigrateOnStartup", "false");
+        builder.UseSetting("IdentityBootstrap:Enabled", "false");
         builder.UseSetting("ConnectionStrings:SqlServer", connection.ConnectionString);
         builder.UseSetting("IdentitySecurity:SigningKeyBase64", SigningKey);
         builder.ConfigureLogging(logging => logging.AddProvider(Logs));

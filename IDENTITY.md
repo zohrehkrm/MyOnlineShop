@@ -9,7 +9,10 @@ The success envelope now lives in BuildingBlocks Abstractions so module controll
 Set `IdentitySecurity__SigningKeyBase64` through environment variables or a secret provider. It must encode at least 32 cryptographically random bytes. There is no checked-in key or development fallback. For a temporary local process, generate a key without printing it:
 
 ```powershell
-$env:IdentitySecurity__SigningKeyBase64 = [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$jwtBytes = New-Object byte[] 32
+$jwtGenerator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+try { $jwtGenerator.GetBytes($jwtBytes) } finally { $jwtGenerator.Dispose() }
+$env:IdentitySecurity__SigningKeyBase64 = [Convert]::ToBase64String($jwtBytes)
 dotnet run --project MyOnlineShop --launch-profile https
 ```
 
@@ -21,7 +24,7 @@ Other `IdentitySecurity` settings: issuer, audience, access lifetime (default 10
 
 Required registration fields are FirstName, LastName, Email and Password. PhoneNumber is optional and, if supplied, uses international E.164-style format (`+` followed by 8–15 digits, with a nonzero leading country digit). Email is normalized with trimming and invariant uppercase and has a unique index. PhoneNumber has a filtered unique index; multiple users may omit it. Additional profile fields can be added independently of authentication later.
 
-Passwords are 12–128 characters and require uppercase and lowercase letters, a digit and a non-whitespace symbol. ASP.NET Core's versioned PasswordHasher uses 600,000 iterations and supports rehashing older hashes on successful login. Plaintext passwords are never persisted. Unknown-user verification performs a dummy password-hash check. Wrong passwords, unknown users, inactive users and locked users return the same invalid-credentials message.
+Passwords are 8–128 characters and require uppercase and lowercase English letters, a digit and a symbol, with no whitespace. Validation reports each field's failed rules using localized resources. ASP.NET Core's versioned PasswordHasher uses 600,000 iterations and supports rehashing older hashes on successful login. Plaintext passwords are never persisted. Unknown-user verification performs a dummy password-hash check. Wrong passwords, unknown users, inactive users and locked users return the same invalid-credentials message.
 
 Public registration creates an active Customer; email/phone verification and OTP infrastructure are deferred. Client-supplied roles or activation fields cannot grant privileges. Five failed logins lock the account for the configured interval.
 
@@ -54,13 +57,7 @@ Business conflicts return 409, validation errors 400, invalid credentials/tokens
 
 ## Initial administrator
 
-No user credentials are seeded. After reviewing and applying the Identity migration through your deployment process, supply FirstName, LastName, Email and Password through `IdentityBootstrap__...` environment variables or a secret provider, then explicitly run:
-
-```powershell
-dotnet run --project MyOnlineShop -- --BootstrapIdentityAdmin=true
-```
-
-This command provisions the first administrator and exits. It refuses to run if any Administrator assignment already exists, and uses a database application lock to serialize bootstrap attempts. Remove bootstrap credentials/configuration afterward. Normal API startup does not provision users or apply migrations. There is no HTTP bootstrap endpoint.
+No user credentials are seeded in migrations. Startup bootstrap is explicitly controlled by `IdentityBootstrap:Enabled` (default false), with password supplied through secure `IdentityBootstrap:Password` configuration. It creates the named `zohrehkrm` account through ASP.NET Core Identity `UserManager.CreateAsync`, using the existing tables and permission design. Exact matching accounts are handled idempotently without changing their passwords; username/email/profile conflicts fail safely. The legacy `BootstrapIdentityAdmin=true` host mode is retired. See [database initialization and bootstrap](DATABASE_INITIALIZATION.md) for credentials, migration order, concurrency, permissions and recovery. There is no HTTP bootstrap endpoint.
 
 ## Persistence, audit and migration
 
@@ -68,7 +65,7 @@ This command provisions the first administrator and exits. It refuses to run if 
 
 Command transactions include business changes and append-only audit records. Login failure and refresh-replay outcomes commit their security audit/state before returning an error. Audits record safe action/outcome metadata, actor and target IDs, UTC time and correlation ID. They exclude passwords, tokens, email addresses and phone numbers. Audit updates/deletes are rejected by normal synchronous and asynchronous SaveChanges paths; database administrators remain responsible for access control and retention.
 
-The reviewed idempotent SQL is in `artifacts/identity-migration.sql`. No application migration has been applied. To regenerate or verify:
+The reviewed idempotent SQL is in `artifacts/identity-migration.sql`. No application migration has been applied in this implementation. Identity design-time tooling requires `ConnectionStrings__SqlServer`; the explicit design-time factory constructs the model without running host initialization. Supply that variable securely for applying migrations; an offline placeholder connection is sufficient for script/model generation, which does not open a connection. To regenerate or verify:
 
 ```powershell
 dotnet ef migrations script --idempotent --project src/Modules/Identity/Infrastructure --startup-project MyOnlineShop --context IdentityDbContext --no-build --output artifacts/identity-migration.sql -- --environment Development

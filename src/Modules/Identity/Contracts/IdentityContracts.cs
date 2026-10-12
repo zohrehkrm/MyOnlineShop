@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using MyOnlineShop.BuildingBlocks.Abstractions.Localization;
 
 namespace MyOnlineShop.Identity.Contracts;
 
@@ -32,33 +33,42 @@ public static class IdentityPermissions
 
 public sealed class RegisterCommand
 {
-    [Required, StringLength(100)] public string FirstName { get; init; } = string.Empty;
-    [Required, StringLength(100)] public string LastName { get; init; } = string.Empty;
-    [Required, EmailAddress, StringLength(254)] public string Email { get; init; } = string.Empty;
-    [Required, StringLength(128, MinimumLength = 12)] public string Password { get; init; } = string.Empty;
-    [RegularExpression(@"^\+[1-9][0-9]{7,14}$")] public string? PhoneNumber { get; init; }
+    [Display(Name = nameof(ValidationMessages.FirstName), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), StringLength(100, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.StringLength))] public string FirstName { get; init; } = string.Empty;
+    [Display(Name = nameof(ValidationMessages.LastName), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), StringLength(100, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.StringLength))] public string LastName { get; init; } = string.Empty;
+    [Display(Name = nameof(ValidationMessages.Email), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), EmailAddress(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.EmailAddress)), StringLength(254, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.StringLength))] public string Email { get; init; } = string.Empty;
+    [Display(Name = nameof(ValidationMessages.Password), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), StringLength(128, MinimumLength = 8, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.StringLength)), PasswordComplexity] public string Password { get; init; } = string.Empty;
+    [RegularExpression(@"^\+[1-9][0-9]{7,14}$", ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.PhoneNumber))] public string? PhoneNumber { get; init; }
 }
 
 public sealed class LoginCommand
 {
-    [Required, EmailAddress, StringLength(254)] public string Email { get; init; } = string.Empty;
-    [Required, StringLength(128)] public string Password { get; init; } = string.Empty;
+    [Display(Name = nameof(ValidationMessages.Email), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), EmailAddress(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.EmailAddress)), StringLength(254, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.StringLength))] public string Email { get; init; } = string.Empty;
+    [Display(Name = nameof(ValidationMessages.Password), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), StringLength(128, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.StringLength))] public string Password { get; init; } = string.Empty;
 }
 
 public sealed class RefreshCommand
 {
-    [Required, StringLength(64, MinimumLength = 64)] public string RefreshToken { get; init; } = string.Empty;
+    [Display(Name = nameof(ValidationMessages.RefreshToken), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), StringLength(64, MinimumLength = 64, ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.StringLength))] public string RefreshToken { get; init; } = string.Empty;
 }
 
 public sealed class CreateRoleCommand
 {
-    [Required, RegularExpression(@"^[A-Za-z][A-Za-z0-9_.-]{0,63}$")]
+    [Display(Name = nameof(ValidationMessages.Name), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required)), RegularExpression(@"^[A-Za-z][A-Za-z0-9_.-]{0,63}$", ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.RegularExpression))]
     public string Name { get; init; } = string.Empty;
 }
 
 public sealed class ChangeStatusCommand
 {
-    [Required] public bool? IsActive { get; init; }
+    [Display(Name = nameof(ValidationMessages.IsActive), ResourceType = typeof(ValidationMessages))]
+    [Required(ErrorMessageResourceType = typeof(ValidationMessages), ErrorMessageResourceName = nameof(ValidationMessages.Required))] public bool? IsActive { get; init; }
 }
 
 public sealed class TokenPair
